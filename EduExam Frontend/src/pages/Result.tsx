@@ -14,16 +14,28 @@ const Result = () => {
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    const storedUser = api.getCurrentUser();
-    const storedResult = api.getExamResult();
+    const fetchResult = async () => {
+      const storedUser = api.getCurrentUser();
+      if (!storedUser) {
+        navigate('/login');
+        return;
+      }
+      setUser(storedUser);
 
-    if (!storedUser || !storedResult) {
-      navigate('/login');
-      return;
-    }
+      try {
+        const storedResult = await api.getExamResult();
+        if (!storedResult) {
+          navigate('/exam');
+          return;
+        }
+        setResult(storedResult);
+      } catch (error) {
+        console.error('Failed to fetch result', error);
+        navigate('/exam');
+      }
+    };
 
-    setUser(storedUser);
-    setResult(storedResult);
+    fetchResult();
   }, []);
 
   const downloadCertificate = async () => {
@@ -137,7 +149,10 @@ const Result = () => {
               {isDownloading ? 'Generating...' : 'Download Certificate'}
             </button>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                localStorage.removeItem('lastExamResult');
+                navigate('/exam');
+              }}
               className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl font-black text-lg bg-white border-2 border-slate-100 text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
             >
               <RotateCcw size={22} />
