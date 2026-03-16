@@ -179,7 +179,6 @@ export const api = {
   },
 
   // --- Exam Questions ---
-  // --- Exam Questions ---
   getQuestions: async () => {
     const userId = api.getUserId();
     if (!userId) throw new Error('User not logged in');
@@ -194,7 +193,6 @@ export const api = {
 
     return data.data;
   },
-  // --- Answers ---
   // --- Answers ---
   saveAnswer: async (questionId: number, selectedOption: string) => {
     const userId = api.getUserId();
