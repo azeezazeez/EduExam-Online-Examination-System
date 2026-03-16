@@ -22,6 +22,25 @@
 ::-webkit-scrollbar {
   width: 8px;
 }
+@media print {
+
+  body * {
+    visibility: hidden;
+  }
+
+  .certificate-container,
+  .certificate-container * {
+    visibility: visible;
+  }
+
+  .certificate-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+}
 
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
