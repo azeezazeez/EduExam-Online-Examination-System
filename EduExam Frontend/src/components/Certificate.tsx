@@ -12,67 +12,64 @@ const Certificate: React.FC<CertificateProps> = ({ username, userId, percentage,
   return (
     <div 
       id="certificate-content"
-      className="w-[800px] h-[600px] bg-white p-12 relative border-[16px] border-double border-indigo-600 flex flex-col items-center justify-between text-slate-800 font-serif"
+      className="w-[800px] h-[600px] bg-white p-20 relative border-[12px] border-slate-50 flex flex-col items-center justify-between text-slate-800 font-sans"
       style={{ boxSizing: 'border-box' }}
     >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+      {/* Elegant Inner Border */}
+      <div className="absolute inset-4 border border-slate-200 pointer-events-none" />
       
-      {/* Corner Ornaments */}
-      <div className="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-indigo-300" />
-      <div className="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-indigo-300" />
-      <div className="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-indigo-300" />
-      <div className="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-indigo-300" />
-
       {/* Header */}
-      <div className="text-center">
-        <div className="flex justify-center mb-4">
-          <Award size={64} className="text-indigo-600" />
+      <div className="text-center w-full relative z-10">
+        <div className="flex justify-center mb-8">
+          <Award size={48} className="text-indigo-600 opacity-80" />
         </div>
-        <h1 className="text-5xl font-black tracking-widest uppercase mb-2 text-indigo-900">Certificate</h1>
-        <h2 className="text-xl font-bold tracking-[0.3em] uppercase text-slate-500">of Achievement</h2>
+        <h1 className="text-3xl font-bold tracking-[0.1em] text-slate-900 uppercase mb-2">Certificate of Completion</h1>
+        <div className="w-24 h-1 bg-indigo-600 mx-auto rounded-full" />
       </div>
 
       {/* Body */}
-      <div className="text-center space-y-6">
-        <p className="text-lg italic text-slate-600">This is to certify that</p>
-        <h3 className="text-4xl font-black text-slate-900 border-b-2 border-slate-200 pb-2 px-12 inline-block">
-          {username}
-        </h3>
-        <p className="text-lg text-slate-600 max-w-lg mx-auto leading-relaxed">
-          has successfully completed the <span className="font-bold text-indigo-600">EduExam Online Examination</span> with an outstanding performance score of
-        </p>
-        <div className="text-5xl font-black text-indigo-600">
-          {percentage}%
+      <div className="text-center space-y-10 flex-1 flex flex-col justify-center relative z-10">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-slate-400 italic">This is to certify that</p>
+          <h2 className="text-5xl font-serif font-bold text-slate-900 tracking-tight">
+            {username}
+          </h2>
+        </div>
+        
+        <div className="max-w-lg mx-auto">
+          <p className="text-base text-slate-500 leading-relaxed">
+            has successfully demonstrated proficiency and met all requirements for the
+            <br />
+            <span className="font-bold text-slate-800 text-lg">EduExam Professional Assessment</span>
+          </p>
+          <p className="mt-6 text-slate-400 text-sm">
+            Achieving a final evaluation score of <span className="text-indigo-600 font-bold">{percentage}%</span>
+          </p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="w-full flex justify-between items-end px-8">
-        <div className="text-left">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date Issued</p>
-          <p className="text-sm font-bold">{date}</p>
-          <div className="w-32 h-px bg-slate-300 mt-1" />
-        </div>
-
-        <div className="flex flex-col items-center">
-          <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center border-2 border-indigo-100 mb-2">
-            <ShieldCheck size={40} className="text-indigo-600" />
+      <div className="w-full grid grid-cols-2 gap-20 pt-10 relative z-10">
+        <div className="border-t border-slate-200 pt-4">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Verification Details</p>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-mono text-slate-600">ID: {userId}</span>
+            <span className="text-xs text-slate-600">{date}</span>
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Official EduExam Seal</p>
         </div>
 
-        <div className="text-right">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Certificate ID</p>
-          <p className="text-sm font-mono font-bold text-indigo-600">{userId}</p>
-          <div className="w-32 h-px bg-slate-300 mt-1" />
+        <div className="border-t border-slate-200 pt-4 text-right flex flex-col items-end relative">
+          {/* Signature/Contribution Pic */}
+          <div className="absolute -top-12 right-0 opacity-80">
+            <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 45C25 40 40 15 60 25C80 35 95 10 110 20" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M20 50C35 45 50 20 70 30C90 40 105 15 115 25" stroke="#4F46E5" strokeWidth="1" strokeOpacity="0.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <ShieldCheck size={24} className="text-indigo-600 mb-1 opacity-60" />
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Authorized Digital Signature</p>
+          <p className="text-xs font-serif italic text-slate-800 mt-1">EduExam Certification Board</p>
         </div>
-      </div>
-
-      {/* Signature Placeholder */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-center">
-        <p className="font-serif italic text-2xl text-slate-400 mb-1">EduExam Board</p>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorized Signature</p>
       </div>
     </div>
   );
