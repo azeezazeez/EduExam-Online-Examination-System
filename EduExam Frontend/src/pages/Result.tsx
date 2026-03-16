@@ -1,112 +1,68 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Trophy, XCircle, CheckCircle2, RotateCcw, Award, BarChart3, Loader2 } from 'lucide-react';
+import { Trophy, XCircle, CheckCircle2, RotateCcw, Award, BarChart3, Download, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
-
-interface ExamResult {
-  totalQuestions: number;
-  attempted: number;
-  correctAnswers: number;
-  wrongAnswers: number;
-  score: number;
-  percentage: number;
-  grade: string;
-  // Add any additional fields your API returns
-}
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import Certificate from '../components/Certificate';
 
 const Result = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [result, setResult] = useState<ExamResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const storedUser = api.getCurrentUser();
-    if (!storedUser) {
+    const storedResult = api.getExamResult();
+
+    if (!storedUser || !storedResult) {
       navigate('/login');
       return;
     }
+
     setUser(storedUser);
-    loadResult();
+    setResult(storedResult);
   }, []);
 
-  const loadResult = async () => {
+  const downloadCertificate = async () => {
+    const element = document.getElementById('certificate-content');
+    if (!element) return;
+
+    setIsDownloading(true);
     try {
-      setLoading(true);
-      const data = await api.getExamResult();
-      console.log('API Result data:', data); // Debug log to see actual structure
-
-      // Map the API response to your interface if needed
-      const mappedResult: ExamResult = {
-        totalQuestions: data.totalQuestions || 0,
-        attempted: data.attempted || 0,
-        correctAnswers: data.correctAnswers || data.correct || 0, // Handle different field names
-        wrongAnswers: data.wrongAnswers || data.wrong || 0,
-        score: data.score || data.correctAnswers || 0,
-        percentage: data.percentage || ((data.correctAnswers / data.totalQuestions) * 100) || 0,
-        grade: data.grade || calculateGrade(data.percentage || ((data.correctAnswers / data.totalQuestions) * 100))
-      };
-
-      setResult(mappedResult);
-    } catch (err: any) {
-      console.error('Error loading result:', err);
-      setError(err.message || 'Failed to load result');
+      const canvas = await html2canvas(element, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [800, 600]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, 800, 600);
+      pdf.save(`EduExam_Certificate_${user.username.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Error generating certificate:', error);
     } finally {
-      setLoading(false);
+      setIsDownloading(false);
     }
   };
 
-  // Helper function to calculate grade if API doesn't provide it
-  const calculateGrade = (percentage: number): string => {
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B+';
-    if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C';
-    if (percentage >= 35) return 'D';
-    return 'F';
-  };
+  if (!user || !result) return null;
 
-  const handleRetake = () => {
-    api.logout();
-    navigate('/register');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="animate-spin w-12 h-12 text-indigo-600 mx-auto mb-4" />
-          <p className="text-slate-600 font-medium">Loading your results...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !result) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-3xl shadow-xl max-w-md">
-          <XCircle className="w-12 h-12 text-rose-600 mx-auto mb-4" />
-          <p className="text-rose-600 font-bold mb-4">{error || 'Failed to load results'}</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const isPass = result.percentage >= 50;
+  const wrong = result.attempted - result.correct;
+  const percentage = (result.correct / result.totalQuestions) * 100;
+  const isPass = percentage >= 50;
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8">
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row"
@@ -121,9 +77,9 @@ const Result = () => {
           >
             {isPass ? <Trophy size={64} className="text-white" /> : <XCircle size={64} className="text-white" />}
           </motion.div>
-
+          
           <div className="relative z-10">
-            <motion.h2
+            <motion.h2 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -131,7 +87,7 @@ const Result = () => {
             >
               {isPass ? 'EXCELLENT!' : 'KEEP TRYING'}
             </motion.h2>
-            <motion.p
+            <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
@@ -141,18 +97,18 @@ const Result = () => {
             </motion.p>
           </div>
 
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6 }}
             className="mt-12 bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 w-full relative z-10"
           >
             <p className="text-[10px] uppercase font-black tracking-[0.2em] opacity-60 mb-1">Final Score</p>
-            <h3 className="text-5xl font-black">{Math.round(result.percentage)}%</h3>
+            <h3 className="text-5xl font-black">{percentage}%</h3>
             <div className="mt-4 h-2 bg-white/20 rounded-full overflow-hidden">
-              <motion.div
+              <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: `${result.percentage}%` }}
+                animate={{ width: `${percentage}%` }}
                 transition={{ duration: 1, delay: 0.8 }}
                 className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
               />
@@ -211,36 +167,55 @@ const Result = () => {
               <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3">
                 <CheckCircle2 size={20} />
               </div>
-              <p className="text-2xl font-black text-emerald-600">{result.correctAnswers}</p>
+              <p className="text-2xl font-black text-emerald-600">{result.correct}</p>
               <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Correct</p>
             </div>
             <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100 flex flex-col items-center text-center">
               <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-3">
                 <XCircle size={20} />
               </div>
-              <p className="text-2xl font-black text-rose-600">{result.wrongAnswers}</p>
+              <p className="text-2xl font-black text-rose-600">{wrong}</p>
               <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Incorrect</p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={handleRetake}
+              onClick={() => navigate('/login')}
               className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all active:scale-95"
             >
               <RotateCcw size={18} />
               Retake Exam
             </button>
             <button
-              onClick={() => window.print()}
-              className="flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95"
+              onClick={downloadCertificate}
+              disabled={isDownloading || !isPass}
+              className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all shadow-xl active:scale-95 ${
+                isPass 
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100' 
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+              }`}
             >
-              <Award size={18} />
-              Download Certificate
+              {isDownloading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Download size={18} />
+              )}
+              {isDownloading ? 'Generating...' : 'Download Certificate'}
             </button>
           </div>
         </div>
       </motion.div>
+
+      {/* Hidden Certificate for Capture */}
+      <div className="fixed left-[-9999px] top-0">
+        <Certificate 
+          username={user.username}
+          userId={user.userId}
+          percentage={percentage}
+          date={new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+        />
+      </div>
     </div>
   );
 };
