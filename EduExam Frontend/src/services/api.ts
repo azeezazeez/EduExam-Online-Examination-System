@@ -2,7 +2,7 @@
  * API Service for EduExam
  */
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'https://eduexam-online-examination-system.onrender.com';
 
 // Helper function to handle responses
 const handleResponse = async (response: Response) => {
