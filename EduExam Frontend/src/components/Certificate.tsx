@@ -1,5 +1,6 @@
 import React from 'react';
-import { Award, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 interface CertificateProps {
   username: string;
@@ -25,68 +26,59 @@ const Certificate: React.FC<CertificateProps> = ({
       <div className="absolute inset-4 border border-slate-200 pointer-events-none" />
 
       {/* Header */}
-      <div className="text-center w-full relative z-10">
+      <div className="text-center">
 
-        <div className="flex justify-center mb-8">
-          <Award size={48} className="text-indigo-600 opacity-80" />
-        </div>
+        {/* Organization Logo */}
+        <img
+          src={logo}
+          alt="Organization Logo"
+          className="w-20 h-20 mx-auto mb-6"
+        />
 
-        <h1 className="text-3xl font-bold tracking-[0.1em] text-slate-900 uppercase mb-2">
+        <h1 className="text-3xl font-bold tracking-[0.1em] text-slate-900 uppercase mb-3">
           Certificate of Completion
         </h1>
 
-        <div className="w-24 h-1 bg-indigo-600 mx-auto rounded-full" />
+        <div className="w-24 h-1 bg-indigo-600 mx-auto rounded-full mb-6" />
 
       </div>
-
 
       {/* Body */}
+      <div className="text-center space-y-8 flex-1 flex flex-col justify-center">
 
-      <div className="text-center space-y-10 flex-1 flex flex-col justify-center relative z-10">
+        <p className="text-sm font-medium text-slate-400 italic">
+          This Certificate is Awarded To
+        </p>
 
-        <div className="space-y-3">
+        {/* Candidate Name */}
+        <h2 className="text-5xl font-serif font-bold text-slate-900 tracking-tight">
+          {username}
+        </h2>
 
-          <p className="text-sm font-medium text-slate-400 italic">
-            This is to certify that
-          </p>
+        <p className="text-base text-slate-500 leading-relaxed max-w-lg mx-auto">
+          for successfully completing the
+          <br />
+          <span className="font-bold text-slate-800 text-lg">
+            EduExam Professional Assessment
+          </span>
+        </p>
 
-          <h2 className="text-5xl font-serif font-bold text-slate-900 tracking-tight">
-            {username}
-          </h2>
-
-        </div>
-
-
-        <div className="max-w-lg mx-auto">
-
-          <p className="text-base text-slate-500 leading-relaxed">
-            has successfully demonstrated proficiency and met all requirements for the
-            <br />
-            <span className="font-bold text-slate-800 text-lg">
-              EduExam Professional Assessment
-            </span>
-          </p>
-
-          <p className="mt-6 text-slate-400 text-sm">
-            Achieving a final evaluation score of{' '}
-            <span className="text-indigo-600 font-bold">
-              {percentage.toFixed(2)}%
-            </span>
-          </p>
-
-        </div>
+        <p className="text-slate-500 text-sm">
+          Final Score:
+          <span className="text-indigo-600 font-bold ml-2">
+            {percentage.toFixed(2)}%
+          </span>
+        </p>
 
       </div>
 
-
       {/* Footer */}
-
-      <div className="w-full grid grid-cols-2 gap-20 pt-10 relative z-10">
+      <div className="w-full grid grid-cols-2 gap-20 pt-10">
 
         <div className="border-t border-slate-200 pt-4">
 
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-            Verification Details
+            Certificate Details
           </p>
 
           <div className="flex justify-between items-center">
@@ -104,45 +96,12 @@ const Certificate: React.FC<CertificateProps> = ({
         </div>
 
 
-        <div className="border-t border-slate-200 pt-4 text-right flex flex-col items-end relative">
-
-          {/* Signature Illustration */}
-
-          <div className="absolute -top-12 right-0 opacity-80">
-
-            <svg
-              width="120"
-              height="60"
-              viewBox="0 0 120 60"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-
-              <path
-                d="M10 45C25 40 40 15 60 25C80 35 95 10 110 20"
-                stroke="#4F46E5"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              <path
-                d="M20 50C35 45 50 20 70 30C90 40 105 15 115 25"
-                stroke="#4F46E5"
-                strokeWidth="1"
-                strokeOpacity="0.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-            </svg>
-
-          </div>
+        <div className="border-t border-slate-200 pt-4 text-right flex flex-col items-end">
 
           <ShieldCheck size={24} className="text-indigo-600 mb-1 opacity-60" />
 
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Authorized Digital Signature
+            Authorized Signature
           </p>
 
           <p className="text-xs font-serif italic text-slate-800 mt-1">
@@ -155,7 +114,6 @@ const Certificate: React.FC<CertificateProps> = ({
 
     </div>
   );
-
 };
 
 export default Certificate;
