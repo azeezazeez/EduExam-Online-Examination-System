@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, MapPin, GraduationCap, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, MapPin, GraduationCap, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { success, error: toastError } = useToast();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -20,7 +22,8 @@ const Register = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loadingPincode, setLoadingPincode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (formData.pincode.length === 6) {
@@ -43,6 +46,7 @@ const Register = () => {
       }
     } catch (error) {
       console.error('Error fetching pincode:', error);
+      toastError('Could not fetch location details for this pincode.');
     } finally {
       setLoadingPincode(false);
     }
@@ -56,7 +60,7 @@ const Register = () => {
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Valid email is required';
     
     if (!formData.password) newErrors.password = 'Password is required';
-    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     
@@ -73,18 +77,20 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setServerError('');
     
     if (validate()) {
       setIsSubmitting(true);
       try {
         await api.register(formData);
+        success('Registration successful! Redirecting to payment...');
         navigate('/payment');
       } catch (error: any) {
-        setServerError(error.message || 'Registration failed. Please try again.');
+        toastError(error.message || 'Registration failed. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
+    } else {
+      toastError('Please fix the errors in the form before submitting.');
     }
   };
 
@@ -134,12 +140,6 @@ const Register = () => {
             <p className="text-slate-400 font-medium">Please fill in your information below</p>
           </div>
 
-          {serverError && (
-            <div className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl">
-              <p className="text-rose-600 text-sm font-medium text-center">{serverError}</p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -181,13 +181,20 @@ const Register = () => {
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input
-                    type="password"
-                    className={`w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 ${errors.password ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
+                    type={showPassword ? "text" : "password"}
+                    className={`w-full pl-12 pr-12 py-3.5 rounded-2xl border-2 ${errors.password ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     disabled={isSubmitting}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
                 {errors.password && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.password}</p>}
               </div>
@@ -197,13 +204,20 @@ const Register = () => {
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input
-                    type="password"
-                    className={`w-full pl-12 pr-4 py-3.5 rounded-2xl border-2 ${errors.confirmPassword ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`w-full pl-12 pr-12 py-3.5 rounded-2xl border-2 ${errors.confirmPassword ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     disabled={isSubmitting}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
                 {errors.confirmPassword && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.confirmPassword}</p>}
               </div>
