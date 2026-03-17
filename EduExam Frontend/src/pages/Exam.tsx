@@ -12,7 +12,7 @@ const Exam = () => {
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
-  const [timeLeft, setTimeLeft] = useState(60 * 60);
+  const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,32 +27,19 @@ const Exam = () => {
       setUser(storedUser);
 
       try {
-        const rawQuestions = await api.getQuestions();
-
-        // ✅ FIX: normalize backend response
-        const formattedQuestions = rawQuestions.map((q: any) => ({
-          ...q,
-          question: q.question || q.questionText,
-          options:
-            q.options ||
-            [q.optionA, q.optionB, q.optionC, q.optionD].filter(Boolean),
-        }));
-
-        setQuestions(formattedQuestions);
-
-        // fetch existing answers
+        const fetchedQuestions = await api.getQuestions();
+        setQuestions(fetchedQuestions);
+        
+        // Also fetch existing answers if any
         const existingAnswers = await api.getAnswers();
         const answersMap: Record<number, any> = {};
-
         existingAnswers.forEach((ans: any) => {
-          const qIdx = formattedQuestions.findIndex(
-            (q: any) => q.id === ans.questionId
-          );
+          // Find the index of the question in the fetched questions
+          const qIdx = fetchedQuestions.findIndex((q: any) => q.id === ans.questionId);
           if (qIdx !== -1) {
             answersMap[qIdx] = ans.selectedOption;
           }
         });
-
         setAnswers(answersMap);
       } catch (error) {
         console.error('Failed to fetch questions', error);
@@ -80,7 +67,7 @@ const Exam = () => {
   const handleOptionSelect = async (option: string) => {
     const question = questions[currentIdx];
     setAnswers({ ...answers, [currentIdx]: option });
-
+    
     try {
       await api.saveAnswer(question.id, option);
     } catch (error) {
@@ -120,6 +107,7 @@ const Exam = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar userId={user.userId} username={user.username} timeLeft={timeLeft} />
       
+      {/* Progress Bar */}
       <div className="w-full h-1 bg-slate-200">
         <motion.div 
           initial={{ width: 0 }}
@@ -129,7 +117,7 @@ const Exam = () => {
       </div>
 
       <main className="flex-1 container mx-auto max-w-6xl p-2 md:p-4 grid grid-cols-1 lg:grid-cols-4 gap-4">
-        
+        {/* Left Sidebar - Question Navigator (Desktop) */}
         <div className="hidden lg:block lg:col-span-1">
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-4 sticky top-20">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -154,7 +142,6 @@ const Exam = () => {
                 </button>
               ))}
             </div>
-
             <div className="mt-8 pt-6 border-t border-slate-50 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">Answered</span>
@@ -162,17 +149,16 @@ const Exam = () => {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">Remaining</span>
-                <span className="font-bold text-slate-600">
-                  {questions.length - Object.keys(answers).length}
-                </span>
+                <span className="font-bold text-slate-600">{questions.length - Object.keys(answers).length}</span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Main Question Area */}
         <div className="lg:col-span-3 flex flex-col gap-4">
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex-1 flex flex-col overflow-hidden min-h-[400px]">
-            
+            {/* Question Header */}
             <div className="px-6 py-3 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
@@ -187,6 +173,7 @@ const Exam = () => {
               </div>
             </div>
 
+            {/* Question Content */}
             <div className="p-6 md:p-8 flex-1">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -194,15 +181,18 @@ const Exam = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
                 >
                   <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-6 leading-snug">
                     {currentQuestion.question}
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {currentQuestion.options?.map((option: any, idx: number) => (
+                    {currentQuestion.options.map((option, idx) => (
                       <motion.label
                         key={idx}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
                         className={`
                           group flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all
                           ${answers[currentIdx] === option 
@@ -211,21 +201,20 @@ const Exam = () => {
                         `}
                       >
                         <div className={`
-                          w-6 h-6 rounded-full border-2 flex items-center justify-center
+                          w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
                           ${answers[currentIdx] === option 
                             ? 'border-indigo-600 bg-indigo-600' 
-                            : 'border-slate-300'}
+                            : 'border-slate-300 group-hover:border-indigo-400'}
                         `}>
                           {answers[currentIdx] === option && <div className="w-2 h-2 bg-white rounded-full" />}
                         </div>
-
                         <input
                           type="radio"
+                          name="option"
                           className="hidden"
                           checked={answers[currentIdx] === option}
                           onChange={() => handleOptionSelect(option)}
                         />
-
                         <span className="text-lg font-medium">{option}</span>
                       </motion.label>
                     ))}
@@ -234,19 +223,44 @@ const Exam = () => {
               </AnimatePresence>
             </div>
 
+            {/* Footer Navigation */}
             <div className="bg-slate-50/50 border-t border-slate-100 p-4 md:p-6">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex gap-3 w-full md:w-auto">
-                  <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))}>
-                    <ChevronLeft />
+                  <button
+                    onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))}
+                    disabled={currentIdx === 0}
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                  >
+                    <ChevronLeft size={18} />
+                    <span className="hidden md:inline">Previous</span>
                   </button>
-                  <button onClick={() => setCurrentIdx(Math.min(questions.length - 1, currentIdx + 1))}>
-                    <ChevronRight />
+
+                  <button
+                    onClick={() => setCurrentIdx(Math.min(questions.length - 1, currentIdx + 1))}
+                    disabled={currentIdx === questions.length - 1}
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                  >
+                    <span className="hidden md:inline">Next</span>
+                    <ChevronRight size={18} />
                   </button>
                 </div>
 
-                <button onClick={() => setShowConfirm(true)}>
-                  <Send /> Finish Exam
+                <div className="lg:hidden w-full">
+                  <QuestionNavigator
+                    totalQuestions={questions.length}
+                    currentQuestion={currentIdx}
+                    answers={answers}
+                    onNavigate={setCurrentIdx}
+                  />
+                </div>
+
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  className="w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-100 active:scale-95"
+                >
+                  <Send size={18} />
+                  Finish Exam
                 </button>
               </div>
             </div>
@@ -254,14 +268,38 @@ const Exam = () => {
         </div>
       </main>
 
+      {/* Confirmation Modal */}
       <AnimatePresence>
         {showConfirm && (
-          <div className="fixed inset-0 flex items-center justify-center">
-            <motion.div className="bg-white p-6 rounded-xl">
-              <p>
-                You answered {Object.keys(answers).length}/{questions.length}
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
+            >
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Submit Exam?</h3>
+              <p className="text-slate-500 mb-8">
+                You have answered {Object.keys(answers).length} out of {questions.length} questions. Are you sure you want to finish?
               </p>
-              <button onClick={handleSubmit}>Submit</button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  Review
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : 'Yes, Submit'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
