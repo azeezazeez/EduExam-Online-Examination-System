@@ -2,7 +2,7 @@ import React from 'react';
 import { User, Clock } from 'lucide-react';
 
 interface NavbarProps {
-  userId: number;
+  userId: string;
   username: string;
   timeLeft: number;
 }
@@ -15,7 +15,7 @@ const Navbar: React.FC<NavbarProps> = ({ userId, username, timeLeft }) => {
   };
 
   return (
-    <nav className="bg-indigo-600 text-white shadow-lg px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <nav className="bg-indigo-600 text-white shadow-lg px-6 py-2 flex justify-between items-center sticky top-0 z-50">
       <div className="flex items-center gap-2">
         <div className="bg-indigo-500 p-2 rounded-lg">
           <User size={20} />
