@@ -10,15 +10,13 @@ export default function App() {
   return (
     <Router>
       <Routes>
-
-        <Route path="/register" element={<Register />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/exam" element={<Exam />} />
-        <Route path="/result" element={<Result />} />
-        <Route path="/" element={<Navigate to="/register" replace />} />
-
-      </Routes>
-    </Router>
+          <Route path="/register" element={<Register />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/exam" element={<Exam />} />
+          <Route path="/result" element={<Result />} />
+          <Route path="/" element={<Navigate to="/register" replace />} />
+        </Routes>
+      </Router>
   );
 }
