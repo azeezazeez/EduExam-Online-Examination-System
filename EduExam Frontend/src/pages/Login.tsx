@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { User, Lock, LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { success, error: toastError } = useToast();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -28,8 +30,10 @@ const Login = () => {
       setIsSubmitting(true);
       try {
         await api.login(formData);
+        success('Welcome back! Logging you in...');
         navigate('/exam');
       } catch (error) {
+        toastError('Invalid credentials. Please check your username and password.');
         setErrors({ submit: 'Login failed. Please try again.' });
       } finally {
         setIsSubmitting(false);
