@@ -28,31 +28,21 @@ const Exam = () => {
 
       try {
         const fetchedQuestions = await api.getQuestions();
-        // FIX: Ensure fetchedQuestions is an array
-        const questionsArray = Array.isArray(fetchedQuestions) ? fetchedQuestions : [];
-        setQuestions(questionsArray);
+        setQuestions(fetchedQuestions);
         
         // Also fetch existing answers if any
         const existingAnswers = await api.getAnswers();
-        // FIX: Ensure existingAnswers is an array before using forEach
         const answersMap: Record<number, any> = {};
-        
-        if (Array.isArray(existingAnswers)) {
-          existingAnswers.forEach((ans: any) => {
-            // Find the index of the question in the fetched questions
-            if (ans && ans.questionId) {
-              const qIdx = questionsArray.findIndex((q: any) => q && q.id === ans.questionId);
-              if (qIdx !== -1) {
-                answersMap[qIdx] = ans.selectedOption;
-              }
-            }
-          });
-        }
+        existingAnswers.forEach((ans: any) => {
+          // Find the index of the question in the fetched questions
+          const qIdx = fetchedQuestions.findIndex((q: any) => q.id === ans.questionId);
+          if (qIdx !== -1) {
+            answersMap[qIdx] = ans.selectedOption;
+          }
+        });
         setAnswers(answersMap);
       } catch (error) {
         console.error('Failed to fetch questions', error);
-        // FIX: Set empty array on error
-        setQuestions([]);
       } finally {
         setIsLoading(false);
       }
@@ -76,9 +66,6 @@ const Exam = () => {
 
   const handleOptionSelect = async (option: string) => {
     const question = questions[currentIdx];
-    // FIX: Check if question exists
-    if (!question) return;
-    
     setAnswers({ ...answers, [currentIdx]: option });
     
     try {
@@ -111,34 +98,9 @@ const Exam = () => {
     );
   }
 
-  // FIX: Check if questions array exists and has items
-  if (!questions || questions.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="text-amber-500 mx-auto mb-4" size={40} />
-          <p className="text-slate-500 font-medium">No questions available</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (questions.length === 0) return null;
 
-  // FIX: Check if currentQuestion exists
   const currentQuestion = questions[currentIdx];
-  if (!currentQuestion) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-500 font-medium">Question not found</p>
-      </div>
-    );
-  }
-
   const progress = (Object.keys(answers).length / questions.length) * 100;
 
   return (
@@ -226,37 +188,39 @@ const Exam = () => {
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* FIX: Check if options exist and is array */}
-                    {Array.isArray(currentQuestion.options) && currentQuestion.options.map((option, idx) => (
-                      <motion.label
-                        key={idx}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                        className={`
-                          group flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all
-                          ${answers[currentIdx] === option 
-                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 shadow-md shadow-indigo-50' 
-                            : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50 text-slate-600'}
-                        `}
-                      >
-                        <div className={`
-                          w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                          ${answers[currentIdx] === option 
-                            ? 'border-indigo-600 bg-indigo-600' 
-                            : 'border-slate-300 group-hover:border-indigo-400'}
-                        `}>
-                          {answers[currentIdx] === option && <div className="w-2 h-2 bg-white rounded-full" />}
-                        </div>
-                        <input
-                          type="radio"
-                          name="option"
-                          className="hidden"
-                          checked={answers[currentIdx] === option}
-                          onChange={() => handleOptionSelect(option)}
-                        />
-                        <span className="text-lg font-medium">{option}</span>
-                      </motion.label>
-                    ))}
+                    {currentQuestion.options && Array.isArray(currentQuestion.options) 
+                      ? currentQuestion.options.map((option, idx) => (
+                          <motion.label
+                            key={idx}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            className={`
+                              group flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all
+                              ${answers[currentIdx] === option 
+                                ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 shadow-md shadow-indigo-50' 
+                                : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50 text-slate-600'}
+                            `}
+                          >
+                            <div className={`
+                              w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                              ${answers[currentIdx] === option 
+                                ? 'border-indigo-600 bg-indigo-600' 
+                                : 'border-slate-300 group-hover:border-indigo-400'}
+                            `}>
+                              {answers[currentIdx] === option && <div className="w-2 h-2 bg-white rounded-full" />}
+                            </div>
+                            <input
+                              type="radio"
+                              name="option"
+                              className="hidden"
+                              checked={answers[currentIdx] === option}
+                              onChange={() => handleOptionSelect(option)}
+                            />
+                            <span className="text-lg font-medium">{option}</span>
+                          </motion.label>
+                        ))
+                      : null
+                    }
                   </div>
                 </motion.div>
               </AnimatePresence>
