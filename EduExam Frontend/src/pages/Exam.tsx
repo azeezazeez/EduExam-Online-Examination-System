@@ -28,21 +28,31 @@ const Exam = () => {
 
       try {
         const fetchedQuestions = await api.getQuestions();
-        setQuestions(fetchedQuestions);
+        // FIX: Ensure fetchedQuestions is an array
+        const questionsArray = Array.isArray(fetchedQuestions) ? fetchedQuestions : [];
+        setQuestions(questionsArray);
         
         // Also fetch existing answers if any
         const existingAnswers = await api.getAnswers();
+        // FIX: Ensure existingAnswers is an array before using forEach
         const answersMap: Record<number, any> = {};
-        existingAnswers.forEach((ans: any) => {
-          // Find the index of the question in the fetched questions
-          const qIdx = fetchedQuestions.findIndex((q: any) => q.id === ans.questionId);
-          if (qIdx !== -1) {
-            answersMap[qIdx] = ans.selectedOption;
-          }
-        });
+        
+        if (Array.isArray(existingAnswers)) {
+          existingAnswers.forEach((ans: any) => {
+            // Find the index of the question in the fetched questions
+            if (ans && ans.questionId) {
+              const qIdx = questionsArray.findIndex((q: any) => q && q.id === ans.questionId);
+              if (qIdx !== -1) {
+                answersMap[qIdx] = ans.selectedOption;
+              }
+            }
+          });
+        }
         setAnswers(answersMap);
       } catch (error) {
         console.error('Failed to fetch questions', error);
+        // FIX: Set empty array on error
+        setQuestions([]);
       } finally {
         setIsLoading(false);
       }
@@ -66,6 +76,9 @@ const Exam = () => {
 
   const handleOptionSelect = async (option: string) => {
     const question = questions[currentIdx];
+    // FIX: Check if question exists
+    if (!question) return;
+    
     setAnswers({ ...answers, [currentIdx]: option });
     
     try {
@@ -98,9 +111,34 @@ const Exam = () => {
     );
   }
 
-  if (questions.length === 0) return null;
+  // FIX: Check if questions array exists and has items
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="text-amber-500 mx-auto mb-4" size={40} />
+          <p className="text-slate-500 font-medium">No questions available</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
+  // FIX: Check if currentQuestion exists
   const currentQuestion = questions[currentIdx];
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-500 font-medium">Question not found</p>
+      </div>
+    );
+  }
+
   const progress = (Object.keys(answers).length / questions.length) * 100;
 
   return (
@@ -188,7 +226,8 @@ const Exam = () => {
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {currentQuestion.options.map((option, idx) => (
+                    {/* FIX: Check if options exist and is array */}
+                    {Array.isArray(currentQuestion.options) && currentQuestion.options.map((option, idx) => (
                       <motion.label
                         key={idx}
                         whileHover={{ scale: 1.01 }}
