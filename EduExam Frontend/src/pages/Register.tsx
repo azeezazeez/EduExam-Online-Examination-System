@@ -38,7 +38,7 @@ const Register = () => {
         const postOffice = data[0].PostOffice[0];
         setFormData(prev => ({
           ...prev,
-          city: postOffice.City,
+          city: postOffice.district,
           state: postOffice.State,
         }));
       }
