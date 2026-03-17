@@ -1,50 +1,38 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, LogIn } from 'lucide-react';
+import { User, Lock, LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    usernameOrEmail: '',
+    username: '',
     password: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.usernameOrEmail) newErrors.usernameOrEmail = 'Username or Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (!formData.username) newErrors.username = 'Username is required';
+    if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setServerError('');
-    
     if (validate()) {
-      setLoading(true);
-      
+      setIsSubmitting(true);
       try {
-        const response = await api.login(formData);
-        
-        if (response.success) {
-          // Navigate based on payment status
-          if (response.data.paymentStatus) {
-            navigate('/exam');
-          } else {
-            navigate('/payment');
-          }
-        }
-      } catch (err: any) {
-        setServerError(err.message || 'Login failed. Please try again.');
+        await api.login(formData);
+        navigate('/exam');
+      } catch (error) {
+        setErrors({ submit: 'Login failed. Please try again.' });
       } finally {
-        setLoading(false);
+        setIsSubmitting(false);
       }
     }
   };
@@ -69,35 +57,20 @@ const Login = () => {
         </div>
 
         <div className="p-10">
-          {serverError && (
-            <div className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl">
-              <p className="text-rose-600 text-sm font-medium text-center">{serverError}</p>
-            </div>
-          )}
-
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                Username or Email
-              </label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                 <input
                   type="text"
-                  className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${
-                    errors.usernameOrEmail 
-                      ? 'border-rose-100 bg-rose-50/30' 
-                      : 'border-slate-100 bg-slate-50/50'
-                  } focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
-                  placeholder="Enter your username or email"
-                  value={formData.usernameOrEmail}
-                  onChange={(e) => setFormData({ ...formData, usernameOrEmail: e.target.value })}
-                  disabled={loading}
+                  className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${errors.username ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
+                  placeholder="Enter your username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 />
               </div>
-              {errors.usernameOrEmail && (
-                <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.usernameOrEmail}</p>
-              )}
+              {errors.username && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.username}</p>}
             </div>
 
             <div className="space-y-2">
@@ -105,37 +78,32 @@ const Login = () => {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                 <input
-                  type="password"
-                  className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${
-                    errors.password 
-                      ? 'border-rose-100 bg-rose-50/30' 
-                      : 'border-slate-100 bg-slate-50/50'
-                  } focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
+                  type={showPassword ? "text" : "password"}
+                  className={`w-full pl-12 pr-12 py-4 rounded-2xl border-2 ${errors.password ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  disabled={loading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
-              {errors.password && (
-                <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.password}</p>
-              )}
+              {errors.password && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.password}</p>}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className={`w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 ${
-                loading ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'
-              } mt-4`}
+              disabled={isSubmitting}
+              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 active:scale-[0.98] mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {isSubmitting ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Logging in...</span>
+                  <Loader2 className="animate-spin" size={22} />
+                  Logging in...
                 </>
               ) : (
                 'Start Examination'
@@ -148,7 +116,6 @@ const Login = () => {
                 type="button"
                 onClick={() => navigate('/register')}
                 className="text-indigo-600 font-bold hover:underline"
-                disabled={loading}
               >
                 Register Now
               </button>
