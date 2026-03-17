@@ -4,12 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global Styles */
 body {
   font-family: "Inter", sans-serif;
   background-color: #f8fafc;
 }
 
-/* Scrollbar */
+/* Custom Scrollbar */
 
 ::-webkit-scrollbar {
   width: 8px;
