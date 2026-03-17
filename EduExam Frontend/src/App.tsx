@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastProvider } from './components/Toast';
 import Register from './pages/Register';
 import Payment from './pages/Payment';
 import Login from './pages/Login';
@@ -8,8 +9,9 @@ import './styles/main.css';
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
+    <ToastProvider>
+      <Router>
+        <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/login" element={<Login />} />
@@ -18,5 +20,6 @@ export default function App() {
           <Route path="/" element={<Navigate to="/register" replace />} />
         </Routes>
       </Router>
+    </ToastProvider>
   );
 }
