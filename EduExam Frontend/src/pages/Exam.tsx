@@ -152,7 +152,7 @@ const handleOptionSelect = async (optionLetter: string) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden">
       <Navbar userId={user.userId} username={user.username} timeLeft={timeLeft} />
 
       {/* Progress Bar */}
@@ -164,15 +164,15 @@ const handleOptionSelect = async (optionLetter: string) => {
         />
       </div>
 
-      <main className="flex-1 container mx-auto max-w-6xl p-4 md:p-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <main className="flex-1 w-full max-w-[98%] mx-auto p-4 grid grid-cols-1 lg:grid-cols-5 gap-6 overflow-hidden">
         {/* Left Sidebar - Question Navigator (Desktop) */}
-        <div className="hidden lg:block lg:col-span-1">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sticky top-24">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+        <div className="hidden lg:block lg:col-span-1 h-full overflow-y-auto pr-2 custom-scrollbar">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-4 sticky top-0">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <BarChart3 size={16} />
               Navigator
             </h3>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-6 gap-2">
               {questions.map((q, idx) => (
                 <button
                   key={q.qid}
@@ -204,10 +204,10 @@ const handleOptionSelect = async (optionLetter: string) => {
         </div>
 
         {/* Main Question Area */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex-1 flex flex-col overflow-hidden min-h-[500px]">
+        <div className="lg:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex-1 flex flex-col overflow-hidden">
             {/* Question Header */}
-            <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <div className="px-6 py-3 border-b border-slate-50 flex justify-between items-center bg-slate-50/50 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
                   {currentIdx + 1}
@@ -222,7 +222,7 @@ const handleOptionSelect = async (optionLetter: string) => {
             </div>
 
             {/* Question Content */}
-            <div className="p-8 md:p-12 flex-1">
+            <div className="p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentIdx}
@@ -280,8 +280,8 @@ const handleOptionSelect = async (optionLetter: string) => {
             </div>
 
             {/* Footer Navigation */}
-            <div className="bg-slate-50/50 border-t border-slate-100 p-6 md:p-8">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="bg-slate-50/50 border-t border-slate-100 p-4 md:p-6 flex-shrink-0">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex gap-3 w-full md:w-auto">
                   <button
                     onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))}
