@@ -1,5 +1,5 @@
 # ---------- Stage 1: Build with Maven ----------
-FROM maven:3.8-openjdk-17 AS builder
+FROM maven:3.8-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
@@ -12,14 +12,14 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # ---------- Stage 2: Runtime with JRE ----------
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
 # Copy the built JAR file from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Expose port (change to your app's port)
+# Expose port (change to your app's port, likely 8080 for Spring Boot)
 EXPOSE 8080
 
 # Run the application
