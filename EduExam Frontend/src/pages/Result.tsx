@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Trophy, XCircle, CheckCircle2, RotateCcw, Award, BarChart3, Download, Loader2, User, Mail, MapPin, GraduationCap, Calendar, Clock, ChevronRight, ShieldCheck } from 'lucide-react';
-import { api } from './services/api';
+import { api } from '../services/api';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import Certificate from './components/Certificate';
+import Certificate from '../components/Certificate';
 
 const Result = () => {
   const navigate = useNavigate();
