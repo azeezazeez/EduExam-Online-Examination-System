@@ -1,17 +1,16 @@
 # ---------- Stage 1: Build ----------
 FROM node:20-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Install deps (better caching)
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy source code
+# Copy source
 COPY . .
 
-# Build the app (if applicable)
+# Build
 RUN npm run build
 
 
@@ -20,14 +19,20 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy only necessary files from builder
-COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
+# Set environment
+ENV NODE_ENV=production
 
+# Install only production deps
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy built files only
 COPY --from=builder /app/dist ./dist
 
-# Expose port (change if needed)
+# Optional: non-root user (security)
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
 EXPOSE 3000
 
-# Run app
 CMD ["node", "dist/index.js"]
