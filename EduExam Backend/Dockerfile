@@ -1,28 +1,26 @@
-# ---------- Stage 1 ----------
-FROM node:20-alpine AS builder
+# ---------- Stage 1: Build with Maven ----------
+FROM maven:3.8-openjdk-17 AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+# Copy pom.xml and download dependencies (caching layer)
+COPY pom.xml .
+RUN mvn dependency:go-offline
 
-COPY . .
+# Copy source code and build
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-RUN npm run build
-
-
-# ---------- Stage 2 ----------
-FROM node:20-alpine
+# ---------- Stage 2: Runtime with JRE ----------
+FROM openjdk:17-jre-slim
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Copy the built JAR file from builder stage
+COPY --from=builder /app/target/*.jar app.jar
 
-COPY package*.json ./
-RUN npm install --omit=dev
+# Expose port (change to your app's port)
+EXPOSE 8080
 
-COPY --from=builder /app/dist ./dist
-
-EXPOSE 3000
-
-CMD ["node", "dist/index.js"]
+# Run the application
+CMD ["java", "-jar", "app.jar"]
