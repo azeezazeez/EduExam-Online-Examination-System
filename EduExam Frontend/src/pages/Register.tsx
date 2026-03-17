@@ -38,7 +38,7 @@ const Register = () => {
         const postOffice = data[0].PostOffice[0];
         setFormData(prev => ({
           ...prev,
-          district: postOffice.District,
+          city: postOffice.City,
           state: postOffice.State,
         }));
       }
@@ -236,12 +236,12 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">District</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
                 <input
                   type="text"
                   readOnly
                   className="w-full px-5 py-2.5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500 font-medium cursor-not-allowed"
-                  value={formData.district || 'Auto-filled'}
+                  value={formData.city || 'Auto-filled'}
                 />
               </div>
 
