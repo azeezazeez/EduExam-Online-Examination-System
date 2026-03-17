@@ -46,7 +46,7 @@ export const api = {
         email: userData.email,
         password: userData.password,
         pincode: userData.pincode,
-        city: userData.city || userData.city, // Handle both field names
+        city: userData.city || userData.district, // Handle both field names
         education: userData.education
       };
 
