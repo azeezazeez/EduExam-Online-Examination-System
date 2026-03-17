@@ -55,7 +55,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   return (
     <ToastContext.Provider value={{ toast: addToast, success, error, info, warning }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 pointer-events-none w-full max-w-md px-4">
         <AnimatePresence mode="popLayout">
           {toasts.map((t) => (
             <ToastItem key={t.id} toast={t} onRemove={() => removeToast(t.id)} />
@@ -84,10 +84,10 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: () => void }> = ({ toast, on
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: 50, scale: 0.9 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 20, scale: 0.95, transition: { duration: 0.2 } }}
-      className={`pointer-events-auto min-w-[300px] max-w-md p-4 rounded-2xl border shadow-lg flex items-start gap-3 ${bgColors[toast.type]}`}
+      initial={{ opacity: 0, y: -50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95, transition: { duration: 0.2 } }}
+      className={`pointer-events-auto w-full p-4 rounded-2xl border shadow-lg flex items-start gap-3 ${bgColors[toast.type]}`}
     >
       <div className="mt-0.5 flex-shrink-0">{icons[toast.type]}</div>
       <div className="flex-1">
