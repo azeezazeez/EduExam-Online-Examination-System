@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Online Exam</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Copy your existing CSS from Exam.jsp here */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+        }
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        .header-timer {
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 20px;
+            border-radius: 12px;
+            letter-spacing: 5px;
+        }
+        .header-timer.warning {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .container {
+            max-width: 900px;
+            margin: 100px auto 200px;
+            padding: 0 20px;
+        }
+        .question-card {
+            background: #fff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .1);
+        }
+        /* Add more CSS as needed */
+    </style>
+</head>
+<body>
+<div class="navbar">
+    <div class="logo">
+        <span>📝</span> Exam Portal
+    </div>
+    <div class="user-info">
+        <div class="user-name">
+            <i>👤</i> <span th:text="${userName}">User</span>
+        </div>
+        <div class="header-timer" id="headerTimer">00:00:00</div>
+    </div>
+</div>
+
+<div class="container">
+    <form method="post" th:action="@{/exam}" id="examForm">
+        <input type="hidden" name="jumpIndex" id="jumpIndex" th:value="${qIndex}">
+
+        <div class="question-card">
+            <div class="question-header">
+                    <span class="question-number"
+                          th:text="'Question ' + (${qIndex} + 1) + ' of ' + ${totalQuestions}">
+                    </span>
+            </div>
+
+            <div class="question-text" th:text="${currentQuestion.question}"></div>
+
+            <div class="progress-bar">
+                <div class="progress-fill"
+                     th:style="'width: ' + ((${qIndex} + 1) * 100 / ${totalQuestions}) + '%;'">
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <label class="option-item" th:if="${currentQuestion.optionA != null}">
+                    <input type="radio" name="answer" value="A"
+                           th:checked="${savedAnswer == 'A'}">
+                    <span class="option-label">A</span>
+                    <span th:text="${currentQuestion.optionA}"></span>
+                </label>
+
+                <label class="option-item" th:if="${currentQuestion.optionB != null}">
+                    <input type="radio" name="answer" value="B"
+                           th:checked="${savedAnswer == 'B'}">
+                    <span class="option-label">B</span>
+                    <span th:text="${currentQuestion.optionB}"></span>
+                </label>
+
+                <label class="option-item" th:if="${currentQuestion.optionC != null}">
+                    <input type="radio" name="answer" value="C"
+                           th:checked="${savedAnswer == 'C'}">
+                    <span class="option-label">C</span>
+                    <span th:text="${currentQuestion.optionC}"></span>
+                </label>
+
+                <label class="option-item" th:if="${currentQuestion.optionD != null}">
+                    <input type="radio" name="answer" value="D"
+                           th:checked="${savedAnswer == 'D'}">
+                    <span class="option-label">D</span>
+                    <span th:text="${currentQuestion.optionD}"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <button type="submit" name="nav" value="prev" class="btn-nav"
+                    th:disabled="${qIndex == 0}">← Previous</button>
+
+            <div class="palette-wrapper">
+                <div class="palette">
+                    <div th:each="question, stat : ${questions}"
+                         class="q-box"
+                         th:classappend="${allAnswers.containsKey(question.qId)} ? 'answered' : ''"
+                         th:classappend="${stat.index == qIndex} ? 'active' : ''"
+                         onclick="goTo([[${stat.index}]])"
+                         th:text="${stat.index + 1}">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" name="nav" value="next" class="btn-nav"
+                    th:disabled="${qIndex == totalQuestions - 1}">Next →</button>
+        </div>
+
+        <div class="footer">
+            <button type="button" class="btn-submit" onclick="submitExam()">
+                📊 Submit Examination
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const endTime = [[${endTime}]];
+    let isFormSubmitting = false;
+
+    function formatTimeUnit(unit) {
+        return unit < 10 ? '0' + unit : unit;
+    }
+
+    function updateTimer() {
+        const now = new Date().getTime();
+        const remaining = endTime - now;
+
+        if (remaining <= 0) {
+            document.getElementById('headerTimer').innerHTML = '00:00:00';
+            document.getElementById('headerTimer').classList.add('warning');
+            setTimeout(function() {
+                isFormSubmitting = true;
+                window.location.href = '/result';
+            }, 1000);
+            return;
+        }
+
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+        const timeString = formatTimeUnit(hours) + ':' +
+            formatTimeUnit(minutes) + ':' +
+            formatTimeUnit(seconds);
+
+        const timerElement = document.getElementById('headerTimer');
+        timerElement.innerHTML = timeString;
+
+        if (remaining < 5 * 60 * 1000) {
+            timerElement.classList.add('warning');
+        } else {
+            timerElement.classList.remove('warning');
+        }
+
+        setTimeout(updateTimer, 1000);
+    }
+
+    updateTimer();
+
+    function goTo(index) {
+        isFormSubmitting = true;
+        document.getElementById("jumpIndex").value = index;
+        document.getElementById("examForm").submit();
+    }
+
+    function submitExam() {
+        if (confirm("Are you sure you want to submit the exam?")) {
+            isFormSubmitting = true;
+            document.getElementById("examForm").action = "/submit-exam";
+            document.getElementById("examForm").submit();
+        }
+    }
+
+    // Auto-save answer
+    document.querySelectorAll('input[name="answer"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const answer = this.value;
+            const questionId = [[${currentQuestion.qId}]];
+
+            fetch('/save-answer?questionId=' + questionId + '&answer=' + answer, {
+                method: 'POST'
+            });
+        });
+    });
+
+    // Periodic time check
+    setInterval(function() {
+        fetch('/check-time')
+            .then(response => response.json())
+            .then(data => {
+                if (data.expired) {
+                    isFormSubmitting = true;
+                    window.location.href = "/result";
+                }
+            })
+            .catch(error => console.error('Time check failed:', error));
+    }, 30000);
+</script>
+</body>
+</html>
