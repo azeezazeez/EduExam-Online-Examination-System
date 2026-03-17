@@ -11,13 +11,18 @@ export default function App() {
   return (
     <Router>
       <Routes>
+
         <Route path="/register" element={<Register />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/login" element={<Login />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/result" element={<Result />} />
+
+        {/* Certificate page */}
         <Route path="/certificate" element={<CertificatePage />} />
+
         <Route path="/" element={<Navigate to="/register" replace />} />
+
       </Routes>
     </Router>
   );
