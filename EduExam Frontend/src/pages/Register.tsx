@@ -54,9 +54,14 @@ const Register = () => {
     if (!formData.username) newErrors.username = 'Username is required';
     
     if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Email address is required';
+    } else {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address (e.g., name@example.com)';
+      } else if (formData.email.length > 254) {
+        newErrors.email = 'Email address is too long';
+      }
     }
 
     if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
