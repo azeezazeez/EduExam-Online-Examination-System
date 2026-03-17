@@ -12,7 +12,7 @@ const Exam = () => {
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes
+  const [timeLeft, setTimeLeft] = useState(60 * 60); // 30 minutes
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
