@@ -41,7 +41,7 @@ export const api = {
       console.log('Sending registration data:', userData);
 
       // Map frontend fields to backend expected fields
-    const requestBody = {
+   const requestBody = {
   username: userData.username,
   email: userData.email,
   password: userData.password,
