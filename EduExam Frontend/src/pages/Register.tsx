@@ -12,7 +12,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     pincode: '',
-    district: '',
+    city: '',
     state: '',
     education: '',
   });
