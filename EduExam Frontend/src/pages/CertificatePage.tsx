@@ -1,9 +1,15 @@
-import React from "react";
 import Certificate from "../components/Certificate";
 
-const CertificatePage: React.FC = () => {
+interface UserData {
+  username: string;
+  userId: string;
+  percentage: number;
+  date: string;
+}
 
-  const userData = {
+export default function CertificatePage() {
+
+  const userData: UserData = {
     username: "Azeez",
     userId: "EDU-2026-001",
     percentage: 92.5,
@@ -22,6 +28,4 @@ const CertificatePage: React.FC = () => {
 
     </div>
   );
-};
-
-export default CertificatePage;
+}
