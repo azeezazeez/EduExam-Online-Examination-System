@@ -3,14 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Trophy, XCircle, CheckCircle2, RotateCcw, Award, BarChart3, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
-import { useNavigate } from "react-router-dom";
-
-
-const navigate = useNavigate();
-
-const viewCertificate = () => {
-  navigate("/certificate");
-};
 
 interface ExamResult {
   totalQuestions: number;
