@@ -32,6 +32,10 @@ public class User {
     @Column(length = 100)
     private String city;
 
+    @Column(length = 100)
+    private String state;
+
+
     @Column(length = 50)
     private String education;
 
