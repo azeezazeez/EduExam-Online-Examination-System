@@ -246,6 +246,3 @@ const Result = () => {
 };
 
 export default Result;
-
-
-Fix the erros
