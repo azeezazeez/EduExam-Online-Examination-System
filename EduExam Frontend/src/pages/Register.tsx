@@ -52,7 +52,13 @@ const Register = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.username) newErrors.username = 'Username is required';
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Valid email is required';
+    
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
     if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     if (formData.pincode.length !== 6) newErrors.pincode = 'Pincode must be 6 digits';
