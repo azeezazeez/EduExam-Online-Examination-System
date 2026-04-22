@@ -6,8 +6,8 @@ Edu Online Examination System is a web-based platform built using **Spring Boot*
 
 ## 🚀 Live Links
 
-🌐 Live Demo: https://your-link  
-💻 GitHub: https://github.com/your-username/edu-exam-system  
+🌐 Live Demo: https://eduexam-edu.vercel.app  
+💻 GitHub: https://github.com/azeezazeez/EduExam-Online-Examination-System  
 
 ---
 
@@ -70,16 +70,16 @@ User → Login → Attempt Exam → Submit → Result Generated
 ## 📸 Screenshots
 
 ### 🔐 Register Page  
-![Login](your-image-link)
+![Register Page](https://github.com/user-attachments/assets/84f84b0f-7852-4a30-bf11-e9be06f5346e)
 
 ### 🔐 Login Page  
-![Dashboard](your-image-link)
+![Login Page](https://github.com/user-attachments/assets/619215fe-0303-4b4d-8d59-eb3316815fb2)
 
 ### 📝 Exam Page  
-![Exam](your-image-link)
+![Exam Page](https://github.com/user-attachments/assets/307faabe-3454-4d2b-b915-c31cb53dc39a)
 
 ### 📈 Result Page  
-![Result](your-image-link)
+![Result Page](https://github.com/user-attachments/assets/875bb673-6d11-406f-804a-dae7b3fb67c0)
 
 ---
 
@@ -93,16 +93,6 @@ User → Login → Attempt Exam → Submit → Result Generated
 | POST   | /api/results   | Submit exam         |
 
 ---
-
-## 🚀 Future Enhancements
-
-- Timer-based Exams  
-- Negative Marking System  
-- Leaderboard  
-- AI-based Proctoring  
-
----
-
 ## 👨‍💻 Author
 
 **Azeez**  
