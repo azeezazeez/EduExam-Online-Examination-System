@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, MapPin, GraduationCap, ArrowRight, Loader2, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { User, Mail, Lock, MapPin, GraduationCap, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
@@ -57,20 +57,20 @@ const Register = () => {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.username) newErrors.username = 'Required';
     else if (formData.username.length < 3) newErrors.username = 'Min 3 characters';
-    
+
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email';
-    
+
     if (!formData.password) newErrors.password = 'Required';
     else if (formData.password.length < 8) newErrors.password = 'Min 8 characters';
-    
+
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
-    
+
     if (!formData.pincode) newErrors.pincode = 'Required';
     else if (formData.pincode.length !== 6) newErrors.pincode = 'Must be 6 digits';
-    
+
     if (!formData.district) newErrors.district = 'Could not determine city from pincode';
     if (!formData.state) newErrors.state = 'Could not determine state from pincode';
     if (!formData.education) newErrors.education = 'Select qualification';
@@ -81,58 +81,45 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validate()) {
-      setIsSubmitting(true);
-      try {
-        console.log('Submitting registration data:', formData);
-        
-        const response = await api.register(formData);
-        console.log('Registration response full:', response);
-        
-        // Check if registration was successful
-        if (response && (response.success === true || response.data)) {
-          // Store user data if not already stored
-          if (response.data && !api.getCurrentUser()) {
-            localStorage.setItem('currentUser', JSON.stringify(response.data));
-            if (response.data.userId) {
-              localStorage.setItem('userId', response.data.userId.toString());
-            }
-          }
-          
-          success('Registration successful! Redirecting to payment...');
-          
-          // Navigate to payment after a short delay
-          setTimeout(() => {
-            navigate('/payment');
-          }, 1500);
-        } else {
-          throw new Error(response?.message || 'Registration response was not successful');
-        }
-      } catch (error: any) {
-        console.error('Registration error details:', error);
-        
-        // Handle specific error messages
-        if (error.message === 'Username already exists') {
-          toastError('Username already taken. Please choose another username.');
-          setErrors({ ...errors, username: 'Username already exists' });
-        } else if (error.message === 'Email already registered') {
-          toastError('Email already registered. Please use another email or login.');
-          setErrors({ ...errors, email: 'Email already exists' });
-        } else {
-          toastError(error.message || 'Registration failed. Please try again.');
-        }
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
+
+    if (!validate()) {
       toastError('Please fix the errors in the form before submitting.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      console.log('Submitting registration data:', formData);
+
+      const response = await api.register(formData);
+      console.log('Registration response:', response);
+
+      // ✅ Fixed: Navigate as long as API call doesn't throw,
+      // regardless of whether response contains a `success` field.
+      if (response) {
+        success('Registration successful! Redirecting to payment...');
+        setTimeout(() => {
+          navigate('/payment');
+        }, 1500);
+      } else {
+        throw new Error('Empty response from server');
+      }
+    } catch (error: any) {
+      console.error('Registration error details:', error);
+      // ✅ Fixed: Properly extract error message from server or axios response
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Registration failed. Please try again.';
+      toastError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] w-full max-w-4xl overflow-hidden flex flex-col md:flex-row border border-slate-100"
@@ -177,20 +164,20 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <InputField 
-                label="Username" 
-                icon={<User size={16} />} 
-                placeholder="johndoe" 
+              <InputField
+                label="Username"
+                icon={<User size={16} />}
+                placeholder="johndoe"
                 value={formData.username}
                 onChange={(v: string) => setFormData({ ...formData, username: v })}
                 error={errors.username}
                 disabled={isSubmitting}
               />
-              <InputField 
-                label="Email" 
+              <InputField
+                label="Email"
                 type="email"
-                icon={<Mail size={16} />} 
-                placeholder="john@example.com" 
+                icon={<Mail size={16} />}
+                placeholder="john@example.com"
                 value={formData.email}
                 onChange={(v: string) => setFormData({ ...formData, email: v })}
                 error={errors.email}
@@ -199,11 +186,11 @@ const Register = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <InputField 
-                label="Password" 
-                type={showPassword ? "text" : "password"}
-                icon={<Lock size={16} />} 
-                placeholder="••••••••" 
+              <InputField
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                icon={<Lock size={16} />}
+                placeholder="••••••••"
                 value={formData.password}
                 onChange={(v: string) => setFormData({ ...formData, password: v })}
                 error={errors.password}
@@ -212,11 +199,11 @@ const Register = () => {
                 showState={showPassword}
                 disabled={isSubmitting}
               />
-              <InputField 
-                label="Confirm Password" 
-                type={showConfirmPassword ? "text" : "password"}
-                icon={<Lock size={16} />} 
-                placeholder="••••••••" 
+              <InputField
+                label="Confirm Password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                icon={<Lock size={16} />}
+                placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={(v: string) => setFormData({ ...formData, confirmPassword: v })}
                 error={errors.confirmPassword}
@@ -228,10 +215,10 @@ const Register = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <InputField 
-                label="Pincode" 
-                icon={<MapPin size={16} />} 
-                placeholder="123456" 
+              <InputField
+                label="Pincode"
+                icon={<MapPin size={16} />}
+                placeholder="123456"
                 value={formData.pincode}
                 onChange={(v: string) => setFormData({ ...formData, pincode: v.replace(/\D/g, '') })}
                 error={errors.pincode}
@@ -243,14 +230,14 @@ const Register = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">District/City</label>
                   <div className={`px-5 py-3 rounded-2xl border-2 ${errors.district ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
-                    {formData.district || "Auto-filled from pincode"}
+                    {formData.district || 'Auto-filled from pincode'}
                   </div>
                   {errors.district && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">{errors.district}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">State</label>
                   <div className={`px-5 py-3 rounded-2xl border-2 ${errors.state ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
-                    {formData.state || "Auto-filled from pincode"}
+                    {formData.state || 'Auto-filled from pincode'}
                   </div>
                   {errors.state && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">{errors.state}</p>}
                 </div>
@@ -260,20 +247,25 @@ const Register = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Education Qualification</label>
               <div className="relative">
-                <div 
+                <div
                   onClick={() => !isSubmitting && setIsDropdownOpen(!isDropdownOpen)}
                   className={`w-full pl-14 pr-10 py-3.5 rounded-2xl border-2 ${errors.education ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus-within:border-indigo-500 focus-within:bg-white transition-all duration-300 font-bold cursor-pointer text-sm shadow-sm hover:border-indigo-100 flex items-center justify-between ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <GraduationCap className="text-slate-300" size={18} />
-                    <span className={formData.education ? "text-slate-900" : "text-slate-400"}>
-                      {formData.education ? 
-                        (formData.education === 'SSC' ? '10th Standard (SSC)' : 
-                         formData.education === 'Intermediate' ? '12th Standard / Intermediate' :
-                         formData.education === 'Diploma' ? 'Diploma' :
-                         formData.education === 'BTech' ? 'Undergraduate (BTech)' :
-                         formData.education === 'MTech' ? 'Postgraduate (MTech)' :
-                         'Other') 
+                    <span className={formData.education ? 'text-slate-900' : 'text-slate-400'}>
+                      {formData.education
+                        ? formData.education === 'SSC'
+                          ? '10th Standard (SSC)'
+                          : formData.education === 'Intermediate'
+                          ? '12th Standard / Intermediate'
+                          : formData.education === 'Diploma'
+                          ? 'Diploma'
+                          : formData.education === 'BTech'
+                          ? 'Undergraduate (BTech)'
+                          : formData.education === 'MTech'
+                          ? 'Postgraduate (MTech)'
+                          : 'Other'
                         : 'Select Qualification'}
                     </span>
                   </div>
@@ -294,8 +286,8 @@ const Register = () => {
                         { val: 'Diploma', label: 'Diploma' },
                         { val: 'BTech', label: 'Undergraduate (BTech)' },
                         { val: 'MTech', label: 'Postgraduate (MTech)' },
-                        { val: 'Other', label: 'Other' }
-                      ].map((opt) => (
+                        { val: 'Other', label: 'Other' },
+                      ].map(opt => (
                         <div
                           key={opt.val}
                           onClick={() => {
@@ -335,12 +327,22 @@ const Register = () => {
             </motion.button>
 
             <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-              By continuing, you agree to our <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a> <br /> and <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>
+              By continuing, you agree to our{' '}
+              <a href="#" className="text-indigo-600 hover:underline">
+                Terms of Service
+              </a>{' '}
+              <br /> and{' '}
+              <a href="#" className="text-indigo-600 hover:underline">
+                Privacy Policy
+              </a>
             </p>
           </form>
 
           <p className="text-center text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-8 pt-8 border-t border-slate-100">
-            Already have an account? <button onClick={() => navigate('/login')} className="text-indigo-600 hover:underline">Sign In</button>
+            Already have an account?{' '}
+            <button onClick={() => navigate('/login')} className="text-indigo-600 hover:underline">
+              Sign In
+            </button>
           </p>
         </div>
       </motion.div>
@@ -348,28 +350,32 @@ const Register = () => {
   );
 };
 
-const InputField = ({ 
-  label, 
-  icon, 
-  placeholder, 
-  value, 
-  onChange, 
-  error, 
-  type = "text", 
-  hasToggle, 
-  onToggle, 
-  showState, 
-  loading, 
+const InputField = ({
+  label,
+  icon,
+  placeholder,
+  value,
+  onChange,
+  error,
+  type = 'text',
+  hasToggle,
+  onToggle,
+  showState,
+  loading,
   maxLength,
-  disabled 
+  disabled,
 }: any) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
     <div className="relative group">
-      <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-300 ${error ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-indigo-500'}`}>
+      <div
+        className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
+          error ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-indigo-500'
+        }`}
+      >
         {icon}
       </div>
-      <input 
+      <input
         type={type}
         maxLength={maxLength}
         disabled={disabled}
@@ -380,12 +386,12 @@ const InputField = ({
         `}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
       />
       {hasToggle && (
-        <button 
-          type="button" 
-          onClick={onToggle} 
+        <button
+          type="button"
+          onClick={onToggle}
           disabled={disabled}
           className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
         >
@@ -400,9 +406,9 @@ const InputField = ({
     </div>
     <AnimatePresence>
       {error && (
-        <motion.p 
-          initial={{ opacity: 0, height: 0 }} 
-          animate={{ opacity: 1, height: 'auto' }} 
+        <motion.p
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
           className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
         >
           {error}
