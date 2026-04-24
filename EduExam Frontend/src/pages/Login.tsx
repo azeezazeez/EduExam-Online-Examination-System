@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, LogIn, Loader2, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
@@ -8,9 +8,9 @@ import { useToast } from '../components/Toast';
 const Login = () => {
   const navigate = useNavigate();
   const { success, error: toastError } = useToast();
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
+  const [formData, setFormData] = useState({ 
+    username: '', 
+    password: '' 
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,113 +18,162 @@ const Login = () => {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    
     if (!formData.username) newErrors.username = 'Username is required';
-    if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (validate()) {
       setIsSubmitting(true);
       try {
         await api.login(formData);
         success('Welcome back! Logging you in...');
         navigate('/exam');
-      } catch (error) {
-        toastError('Invalid credentials. Please check your username and password.');
+      } catch (error: any) {
+        toastError(error.message || 'Invalid credentials. Please check your username and password.');
         setErrors({ submit: 'Login failed. Please try again.' });
       } finally {
         setIsSubmitting(false);
       }
+    } else {
+      toastError('Please fix the errors before submitting.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md"
       >
-        <div className="bg-indigo-600 p-12 text-white text-center relative overflow-hidden">
-          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-xl border border-white/30 relative z-10">
-            <LogIn size={40} />
+        <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden border border-slate-100">
+          <div className="bg-slate-900 p-10 text-white text-center relative overflow-hidden">
+            <motion.div 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-500/20"
+            >
+              <LogIn size={32} className="text-white" />
+            </motion.div>
+            <h2 className="text-2xl font-extrabold tracking-tight mb-2">Welcome Back</h2>
+            <p className="text-slate-400 text-xs font-medium">Login to your student dashboard</p>
+            
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-[40px]" />
           </div>
-          <h2 className="text-3xl font-black mb-2 relative z-10 tracking-tight">Welcome Back</h2>
-          <p className="opacity-80 font-medium relative z-10">Login to your student dashboard</p>
-          
-          {/* Decorative elements */}
-          <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-white/5 rounded-full" />
-          <div className="absolute -top-12 -right-12 w-24 h-24 bg-white/5 rounded-full" />
-        </div>
 
-        <div className="p-10">
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
-              <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
-                <input
-                  type="text"
-                  className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 ${errors.username ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
-                  placeholder="Enter your username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                />
+          <div className="p-8 md:p-10">
+            {errors.submit && (
+              <div className="mb-6 p-3 bg-rose-50 border-2 border-rose-200 rounded-2xl">
+                <p className="text-rose-600 text-xs font-medium text-center">{errors.submit}</p>
               </div>
-              {errors.username && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.username}</p>}
-            </div>
+            )}
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  className={`w-full pl-12 pr-12 py-4 rounded-2xl border-2 ${errors.password ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50'} focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium`}
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-                <button
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="relative group">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                    <input
+                      type="text"
+                      className={`w-full pl-14 pr-5 py-3.5 rounded-2xl border-2 transition-all font-bold text-sm placeholder:text-slate-300 tracking-widest
+                        ${errors.username ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50 focus:border-indigo-500 focus:bg-white'}
+                        ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}
+                      `}
+                      placeholder="Username"
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {errors.username && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
+                    >
+                      {errors.username}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="relative group">
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full pl-14 pr-12 py-3.5 rounded-2xl border-2 transition-all font-bold text-sm placeholder:text-slate-300 tracking-widest
+                        ${errors.password ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50 focus:border-indigo-500 focus:bg-white'}
+                        ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}
+                      `}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isSubmitting}
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
+                    >
+                      {errors.password}
+                    </motion.p>
+                  )}
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all duration-300 flex items-center justify-center gap-3 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    Start Examination
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </motion.button>
+
+              <div className="flex flex-col items-center gap-4 pt-8 border-t border-slate-100">
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                  Don't have an account?
+                </p>
+                <button 
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors"
+                  onClick={() => navigate('/register')}
+                  disabled={isSubmitting}
+                  className="text-indigo-600 px-6 py-2 rounded-xl border border-slate-100 font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 hover:bg-indigo-50 transition-all duration-300 active:scale-[0.98] disabled:opacity-50"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  Register Now
                 </button>
               </div>
-              {errors.password && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.password}</p>}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 active:scale-[0.98] mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={22} />
-                  Logging in...
-                </>
-              ) : (
-                'Start Examination'
-              )}
-            </button>
-
-            <p className="text-center text-slate-400 font-medium text-sm pt-4">
-              Don't have an account?{' '}
-              <button 
-                type="button"
-                onClick={() => navigate('/register')}
-                className="text-indigo-600 font-bold hover:underline"
-              >
-                Register Now
-              </button>
-            </p>
-          </form>
+            </form>
+          </div>
         </div>
       </motion.div>
     </div>
