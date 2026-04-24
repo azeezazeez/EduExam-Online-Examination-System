@@ -88,21 +88,40 @@ const Register = () => {
         console.log('Submitting registration data:', formData);
         
         const response = await api.register(formData);
-        console.log('Registration response:', response);
+        console.log('Registration response full:', response);
         
-        if (response && response.success) {
+        // Check if registration was successful
+        if (response && (response.success === true || response.data)) {
+          // Store user data if not already stored
+          if (response.data && !api.getCurrentUser()) {
+            localStorage.setItem('currentUser', JSON.stringify(response.data));
+            if (response.data.userId) {
+              localStorage.setItem('userId', response.data.userId.toString());
+            }
+          }
+          
           success('Registration successful! Redirecting to payment...');
           
-          // Small delay to ensure toast is shown before navigation
+          // Navigate to payment after a short delay
           setTimeout(() => {
             navigate('/payment');
           }, 1500);
         } else {
-          throw new Error('Registration response was not successful');
+          throw new Error(response?.message || 'Registration response was not successful');
         }
       } catch (error: any) {
         console.error('Registration error details:', error);
-        toastError(error.message || 'Registration failed. Please try again.');
+        
+        // Handle specific error messages
+        if (error.message === 'Username already exists') {
+          toastError('Username already taken. Please choose another username.');
+          setErrors({ ...errors, username: 'Username already exists' });
+        } else if (error.message === 'Email already registered') {
+          toastError('Email already registered. Please use another email or login.');
+          setErrors({ ...errors, email: 'Email already exists' });
+        } else {
+          toastError(error.message || 'Registration failed. Please try again.');
+        }
       } finally {
         setIsSubmitting(false);
       }
