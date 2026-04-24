@@ -1,279 +1,208 @@
-const API_BASE_URL = 'https://eduexam-online-examination-system.onrender.com/api';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { User, Lock, LogIn, Loader2, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
-// Helper function to handle responses
-const handleResponse = async (response: Response) => {
-  const contentType = response.headers.get('content-type');
-  let data;
-
-  if (contentType && contentType.includes('application/json')) {
-    data = await response.json();
-  } else {
-    data = await response.text();
-  }
-
-  console.log('Response:', {
-    status: response.status,
-    statusText: response.statusText,
-    data
+const Login = () => {
+  const navigate = useNavigate();
+  const { success, error: toastError } = useToast();
+  const [formData, setFormData] = useState({ 
+    username: '', 
+    password: '' 
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  if (!response.ok) {
-    // Handle different error formats
-    const errorMessage = data?.message || data?.error || response.statusText || 'Request failed';
-    throw {
-      status: response.status,
-      message: errorMessage,
-      data: data
-    };
-  }
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.username) newErrors.username = 'Username is required';
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-  return data;
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validate()) {
+      setIsSubmitting(true);
+      try {
+        const response = await api.login(formData);
+        console.log('Login response:', response);
+        
+        if (response.success) {
+          success('Welcome back! Logging you in...');
+          
+          // Small delay to ensure toast is shown before navigation
+          setTimeout(() => {
+            // Check if payment is completed
+            const user = api.getCurrentUser();
+            console.log('Current user after login:', user);
+            
+            if (user && user.paymentStatus) {
+              navigate('/exam');
+            } else {
+              // If payment not completed, redirect to payment
+              navigate('/payment');
+            }
+          }, 500);
+        }
+      } catch (error: any) {
+        console.error('Login error details:', error);
+        
+        // Handle specific error messages from backend
+        if (error.message === 'User not found') {
+          toastError('Username not found. Please register first.');
+        } else if (error.message === 'Invalid password') {
+          toastError('Incorrect password. Please try again.');
+        } else {
+          toastError(error.message || 'Invalid credentials. Please check your username and password.');
+        }
+        
+        setErrors({ submit: error.message || 'Login failed. Please try again.' });
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] overflow-hidden border border-slate-100">
+          <div className="bg-slate-900 p-10 text-white text-center relative overflow-hidden">
+            <motion.div 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-500/20"
+            >
+              <LogIn size={32} className="text-white" />
+            </motion.div>
+            <h2 className="text-2xl font-extrabold tracking-tight mb-2">Welcome Back</h2>
+            <p className="text-slate-400 text-xs font-medium">Login to your student dashboard</p>
+            
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-[40px]" />
+          </div>
+
+          <div className="p-8 md:p-10">
+            {errors.submit && (
+              <div className="mb-6 p-3 bg-rose-50 border-2 border-rose-200 rounded-2xl">
+                <p className="text-rose-600 text-xs font-medium text-center">{errors.submit}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="relative group">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                    <input
+                      type="text"
+                      className={`w-full pl-14 pr-5 py-3.5 rounded-2xl border-2 transition-all font-bold text-sm placeholder:text-slate-300 tracking-widest
+                        ${errors.username ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50 focus:border-indigo-500 focus:bg-white'}
+                        ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}
+                      `}
+                      placeholder="Username"
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {errors.username && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
+                    >
+                      {errors.username}
+                    </motion.p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="relative group">
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full pl-14 pr-12 py-3.5 rounded-2xl border-2 transition-all font-bold text-sm placeholder:text-slate-300 tracking-widest
+                        ${errors.password ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50/50 focus:border-indigo-500 focus:bg-white'}
+                        ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}
+                      `}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isSubmitting}
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
+                    >
+                      {errors.password}
+                    </motion.p>
+                  )}
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all duration-300 flex items-center justify-center gap-3 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    Start Examination
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </motion.button>
+
+              <div className="flex flex-col items-center gap-4 pt-8 border-t border-slate-100">
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                  Don't have an account?
+                </p>
+                <button 
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  disabled={isSubmitting}
+                  className="text-indigo-600 px-6 py-2 rounded-xl border border-slate-100 font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 hover:bg-indigo-50 transition-all duration-300 active:scale-[0.98] disabled:opacity-50"
+                >
+                  Register Now
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 };
 
-export const api = {
-  // --- Auth ---
-  register: async (userData: any) => {
-    try {
-      console.log('Sending registration data:', userData);
-
-      // Map frontend fields to backend expected fields
-      const requestBody = {
-        username: userData.username,
-        email: userData.email,
-        password: userData.password,
-        pincode: userData.pincode,
-        city: userData.district,
-        state: userData.state,
-        education: userData.education
-      };
-
-      console.log('Request body:', requestBody);
-
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await handleResponse(response);
-      console.log('Registration response data:', data);
-
-      if (data.success) {
-        // Store user data
-        localStorage.setItem('tempUser', JSON.stringify(data.data));
-        localStorage.setItem('userId', data.data.userId.toString());
-        localStorage.setItem('currentUser', JSON.stringify(data.data));
-      }
-
-      return { success: true, data: data.data };
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      throw new Error(error.message || 'Registration failed');
-    }
-  },
-
-  login: async (credentials: any) => {
-    try {
-      console.log('Sending login data:', credentials);
-
-      // Prepare login request body
-      const requestBody = {
-        usernameOrEmail: credentials.usernameOrEmail || credentials.username,
-        password: credentials.password
-      };
-
-      console.log('Login request body:', requestBody);
-
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await handleResponse(response);
-      console.log('Login response data:', data);
-
-      if (data.success) {
-        // Store user data
-        localStorage.setItem('currentUser', JSON.stringify(data.data));
-        localStorage.setItem('userId', data.data.userId.toString());
-        localStorage.setItem('username', data.data.username);
-      }
-
-      return { success: true, data: data.data };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  },
-
-  logout: () => {
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('tempUser');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('username');
-    localStorage.removeItem('examAnswers');
-    localStorage.removeItem('lastExamResult');
-    localStorage.removeItem('paymentHistory');
-  },
-
-  getCurrentUser: () => {
-    const user = localStorage.getItem('currentUser');
-    return user ? JSON.parse(user) : null;
-  },
-
-  getUserId: (): number | null => {
-    const userId = localStorage.getItem('userId');
-    return userId ? parseInt(userId) : null;
-  },
-
-  // --- Payments ---
-  processPayment: async (paymentData: any) => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    const requestBody = {
-      paymentType: paymentData.paymentType,
-      cardNumber: paymentData.cardNumber || '1234567890123456',
-      cvv: paymentData.cvv || '123',
-      upiId: paymentData.upiId || 'onlineexam@upi',
-      amount: 499
-    };
-
-    console.log('Payment request:', { userId, ...requestBody });
-
-    const response = await fetch(`${API_BASE_URL}/payments/process?userId=${userId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    const data = await handleResponse(response);
-
-    if (data.success) {
-      // Update user payment status in localStorage
-      const currentUser = api.getCurrentUser();
-      if (currentUser) {
-        currentUser.paymentStatus = true;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      }
-
-      // Store payment history locally
-      const history = JSON.parse(localStorage.getItem('paymentHistory') || '[]');
-      history.push(data.data);
-      localStorage.setItem('paymentHistory', JSON.stringify(history));
-    }
-
-    return data.data;
-  },
-
-  // --- Exam Questions ---
-  getQuestions: async () => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    console.log('Fetching questions for userId:', userId);
-
-    const response = await fetch(`${API_BASE_URL}/exam/questions?userId=${userId}`);
-    const data = await handleResponse(response);
-
-    console.log('Raw questions data from API:', data);
-    console.log('First question structure:', data.data ? data.data[0] : 'No data');
-
-    return data.data;
-  },
-
-  // --- Answers ---
-  saveAnswer: async (questionId: number, selectedOption: string) => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    const requestBody = {
-      questionId: questionId,
-      selectedOption: selectedOption
-    };
-
-    console.log('Saving answer:', { userId, ...requestBody });
-
-    const response = await fetch(`${API_BASE_URL}/exam/answers?userId=${userId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    const data = await handleResponse(response);
-    return data.data;
-  },
-
-  getAnswers: async () => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    const response = await fetch(`${API_BASE_URL}/exam/answers?userId=${userId}`);
-    const data = await handleResponse(response);
-    return data.data;
-  },
-
-  // --- Exam Submission ---
-  submitExam: async () => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    const response = await fetch(`${API_BASE_URL}/exam/submit?userId=${userId}`, {
-      method: 'POST'
-    });
-
-    const data = await handleResponse(response);
-
-    if (data.success) {
-      localStorage.setItem('lastExamResult', JSON.stringify(data.data));
-    }
-
-    return { success: true, data: data.data };
-  },
-
-  getExamResult: async () => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    // Try to get from localStorage first
-    const cached = localStorage.getItem('lastExamResult');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      return parsed;
-    }
-
-    // Otherwise fetch from API
-    const response = await fetch(`${API_BASE_URL}/exam/result?userId=${userId}`);
-    const data = await handleResponse(response);
-
-    if (data.success) {
-      localStorage.setItem('lastExamResult', JSON.stringify(data.data));
-    }
-
-    return data.data;
-  },
-
-  // --- Payment Status ---
-  getPaymentStatus: async () => {
-    const userId = api.getUserId();
-    if (!userId) throw new Error('User not logged in');
-
-    const response = await fetch(`${API_BASE_URL}/payments/status?userId=${userId}`);
-    const data = await handleResponse(response);
-    return data.data;
-  },
-
-  // Check if user is authenticated
-  isAuthenticated: (): boolean => {
-    return !!api.getCurrentUser();
-  }
-};
+export default Login;
