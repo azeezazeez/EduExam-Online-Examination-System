@@ -18,13 +18,12 @@ const handleResponse = async (response: Response) => {
   });
 
   if (!response.ok) {
-    // Handle different error formats
-    const errorMessage = data?.message || data?.error || response.statusText || 'Request failed';
-    throw {
-      status: response.status,
-      message: errorMessage,
-      data: data
-    };
+    const errorMessage =
+      (typeof data === 'object' && (data?.message || data?.error)) ||
+      response.statusText ||
+      'Request failed';
+    // ✅ Throw a plain Error so .message is always accessible
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -33,82 +32,66 @@ const handleResponse = async (response: Response) => {
 export const api = {
   // --- Auth ---
   register: async (userData: any) => {
-    try {
-      console.log('Sending registration data:', userData);
+    // ✅ Removed inner try/catch so errors propagate naturally to the caller
+    console.log('Sending registration data:', userData);
 
-      // Map frontend fields to backend expected fields
-      const requestBody = {
-        username: userData.username,
-        email: userData.email,
-        password: userData.password,
-        pincode: userData.pincode,
-        city: userData.district,
-        state: userData.state,
-        education: userData.education
-      };
+    const requestBody = {
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      pincode: userData.pincode,
+      city: userData.district,
+      state: userData.state,
+      education: userData.education
+    };
 
-      console.log('Request body:', requestBody);
+    console.log('Request body:', requestBody);
 
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
 
-      const data = await handleResponse(response);
-      console.log('Registration response data:', data);
+    const data = await handleResponse(response);
+    console.log('Registration response data:', data);
 
-      if (data.success) {
-        // Store user data
-        localStorage.setItem('tempUser', JSON.stringify(data.data));
-        localStorage.setItem('userId', data.data.userId.toString());
-        localStorage.setItem('currentUser', JSON.stringify(data.data));
-      }
-
-      return { success: true, data: data.data };
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      throw new Error(error.message || 'Registration failed');
+    if (data.success) {
+      localStorage.setItem('tempUser', JSON.stringify(data.data));
+      localStorage.setItem('userId', data.data.userId.toString());
+      localStorage.setItem('currentUser', JSON.stringify(data.data));
     }
+
+    // ✅ Always return { success: true } if we got here without throwing
+    return { success: true, data: data.data };
   },
 
   login: async (credentials: any) => {
-    try {
-      console.log('Sending login data:', credentials);
+    console.log('Sending login data:', credentials);
 
-      // Prepare login request body
-      const requestBody = {
-        usernameOrEmail: credentials.usernameOrEmail || credentials.username,
-        password: credentials.password
-      };
+    const requestBody = {
+      usernameOrEmail: credentials.usernameOrEmail || credentials.username,
+      password: credentials.password
+    };
 
-      console.log('Login request body:', requestBody);
+    console.log('Login request body:', requestBody);
 
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
 
-      const data = await handleResponse(response);
-      console.log('Login response data:', data);
+    const data = await handleResponse(response);
+    console.log('Login response data:', data);
 
-      if (data.success) {
-        // Store user data
-        localStorage.setItem('currentUser', JSON.stringify(data.data));
-        localStorage.setItem('userId', data.data.userId.toString());
-        localStorage.setItem('username', data.data.username);
-      }
-
-      return { success: true, data: data.data };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
+    if (data.success) {
+      localStorage.setItem('currentUser', JSON.stringify(data.data));
+      localStorage.setItem('userId', data.data.userId.toString());
+      localStorage.setItem('username', data.data.username);
     }
+
+    return { success: true, data: data.data };
   },
 
   logout: () => {
@@ -148,23 +131,19 @@ export const api = {
 
     const response = await fetch(`${API_BASE_URL}/payments/process?userId=${userId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
     const data = await handleResponse(response);
 
     if (data.success) {
-      // Update user payment status in localStorage
       const currentUser = api.getCurrentUser();
       if (currentUser) {
         currentUser.paymentStatus = true;
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
       }
 
-      // Store payment history locally
       const history = JSON.parse(localStorage.getItem('paymentHistory') || '[]');
       history.push(data.data);
       localStorage.setItem('paymentHistory', JSON.stringify(history));
@@ -195,17 +174,15 @@ export const api = {
     if (!userId) throw new Error('User not logged in');
 
     const requestBody = {
-      questionId: questionId,
-      selectedOption: selectedOption
+      questionId,
+      selectedOption
     };
 
     console.log('Saving answer:', { userId, ...requestBody });
 
     const response = await fetch(`${API_BASE_URL}/exam/answers?userId=${userId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -244,14 +221,11 @@ export const api = {
     const userId = api.getUserId();
     if (!userId) throw new Error('User not logged in');
 
-    // Try to get from localStorage first
     const cached = localStorage.getItem('lastExamResult');
     if (cached) {
-      const parsed = JSON.parse(cached);
-      return parsed;
+      return JSON.parse(cached);
     }
 
-    // Otherwise fetch from API
     const response = await fetch(`${API_BASE_URL}/exam/result?userId=${userId}`);
     const data = await handleResponse(response);
 
@@ -272,8 +246,7 @@ export const api = {
     return data.data;
   },
 
-  // Check if user is authenticated
   isAuthenticated: (): boolean => {
     return !!api.getCurrentUser();
   }
-};"
+};
