@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, MapPin, GraduationCap, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -28,42 +28,71 @@ const Register = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [serverWaking, setServerWaking] = useState(false);
 
-  useEffect(() => {
-    if (formData.pincode.length === 6) {
-      fetchPincodeData(formData.pincode);
-    } else if (!pincodeManual) {
-      setFormData(prev => ({ ...prev, district: '', state: '' }));
-    }
-  }, [formData.pincode]);
-
-  const fetchPincodeData = async (pin: string) => {
+  // Debounced pincode fetch
+  const fetchPincodeData = useCallback(async (pin: string) => {
+    // Don't fetch if pin is invalid
+    if (!/^\d{6}$/.test(pin)) return;
+    
     setLoadingPincode(true);
     setPincodeManual(false);
+    
     try {
       const response = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-      if (!response.ok) throw new Error('API error');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
-        const postOffice = data[0].PostOffice[0];
+      
+      // Check if API returned success
+      if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice?.length > 0) {
+        const postOffices = data[0].PostOffice;
+        
+        // Try to find the main post office or use the first one
+        const bestMatch = postOffices.find((po: any) => 
+          po.Name === po.District || 
+          po.Name.includes('SO') || 
+          po.Name.includes('HO')
+        ) || postOffices[0];
+        
         setFormData(prev => ({
           ...prev,
-          district: postOffice.District,
-          state: postOffice.State,
+          district: bestMatch.District || bestMatch.Name.split(' ')[0],
+          state: bestMatch.State,
         }));
+        
+        // Clear any existing errors for these fields
+        setErrors(prev => ({ ...prev, district: '', state: '' }));
+        success('Location auto-filled successfully!');
       } else {
-        // Invalid pincode — allow manual entry
+        // Invalid pincode
         setPincodeManual(true);
         setFormData(prev => ({ ...prev, district: '', state: '' }));
-        toastError('Could not auto-detect location. Please enter district and state manually.');
+        toastError('Invalid pincode. Please enter your district and state manually.');
       }
-    } catch {
-      // Network/CORS failure — silently fall back to manual entry
+    } catch (error) {
+      console.error('Pincode API error:', error);
       setPincodeManual(true);
       setFormData(prev => ({ ...prev, district: '', state: '' }));
+      toastError('Unable to fetch location. Please enter district and state manually.');
     } finally {
       setLoadingPincode(false);
     }
-  };
+  }, [success, toastError]);
+
+  // Debounce effect for pincode
+  useEffect(() => {
+    if (formData.pincode.length === 6) {
+      const timer = setTimeout(() => {
+        fetchPincodeData(formData.pincode);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    } else if (!pincodeManual && formData.pincode.length > 0 && formData.pincode.length < 6) {
+      setFormData(prev => ({ ...prev, district: '', state: '' }));
+    }
+  }, [formData.pincode, fetchPincodeData, pincodeManual]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -73,13 +102,15 @@ const Register = () => {
 
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email';
 
+    // Updated password validation - minimum 5 characters
     if (!formData.password) newErrors.password = 'Required';
-    else if (formData.password.length < 8) newErrors.password = 'Min 8 characters';
+    else if (formData.password.length < 5) newErrors.password = 'Min 5 characters';
+    else if (formData.password.length > 50) newErrors.password = 'Max 50 characters';
 
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
     if (!formData.pincode) newErrors.pincode = 'Required';
-    else if (formData.pincode.length !== 6) newErrors.pincode = 'Must be 6 digits';
+    else if (!/^\d{6}$/.test(formData.pincode)) newErrors.pincode = 'Must be 6 digits';
 
     if (!formData.district) newErrors.district = 'Enter your district / city';
     if (!formData.state) newErrors.state = 'Enter your state';
@@ -219,6 +250,7 @@ const Register = () => {
                 onToggle={() => setShowPassword(!showPassword)}
                 showState={showPassword}
                 disabled={isSubmitting}
+                helperText="Minimum 5 characters"
               />
               <InputField
                 label="Confirm Password"
@@ -267,8 +299,17 @@ const Register = () => {
                       `}
                     />
                   ) : (
-                    <div className={`px-5 py-3 rounded-2xl border-2 ${errors.district ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
-                      {formData.district || 'Auto-filled from pincode'}
+                    <div className={`px-5 py-3 rounded-2xl border-2 ${errors.district ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} h-[48px] flex items-center`}>
+                      {loadingPincode ? (
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <Loader2 className="animate-spin" size={14} />
+                          <span className="text-xs font-medium">Fetching location...</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-500 font-bold uppercase text-[11px]">
+                          {formData.district || 'Auto-filled from pincode'}
+                        </span>
+                      )}
                     </div>
                   )}
                   {errors.district && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">{errors.district}</p>}
@@ -292,8 +333,17 @@ const Register = () => {
                       `}
                     />
                   ) : (
-                    <div className={`px-5 py-3 rounded-2xl border-2 ${errors.state ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
-                      {formData.state || 'Auto-filled from pincode'}
+                    <div className={`px-5 py-3 rounded-2xl border-2 ${errors.state ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} h-[48px] flex items-center`}>
+                      {loadingPincode ? (
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <Loader2 className="animate-spin" size={14} />
+                          <span className="text-xs font-medium">Fetching location...</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-500 font-bold uppercase text-[11px]">
+                          {formData.state || 'Auto-filled from pincode'}
+                        </span>
+                      )}
                     </div>
                   )}
                   {errors.state && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">{errors.state}</p>}
@@ -392,7 +442,7 @@ const Register = () => {
 
 const InputField = ({
   label, icon, placeholder, value, onChange, error,
-  type = 'text', hasToggle, onToggle, showState, loading, maxLength, disabled,
+  type = 'text', hasToggle, onToggle, showState, loading, maxLength, disabled, helperText,
 }: any) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
@@ -413,9 +463,18 @@ const InputField = ({
         value={value}
         onChange={e => onChange(e.target.value)}
       />
+      {helperText && !error && (
+        <div className="absolute right-5 top-1/2 -translate-y-1/2">
+          <span className="text-[9px] text-slate-400 font-medium">{helperText}</span>
+        </div>
+      )}
       {hasToggle && (
-        <button type="button" onClick={onToggle} disabled={disabled}
-          className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50">
+        <button 
+          type="button" 
+          onClick={onToggle} 
+          disabled={disabled}
+          className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
+        >
           {showState ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       )}
@@ -427,8 +486,12 @@ const InputField = ({
     </div>
     <AnimatePresence>
       {error && (
-        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-          className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">
+        <motion.p 
+          initial={{ opacity: 0, height: 0 }} 
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
+        >
           {error}
         </motion.p>
       )}
