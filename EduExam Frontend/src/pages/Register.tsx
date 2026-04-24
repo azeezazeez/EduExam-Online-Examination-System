@@ -21,6 +21,7 @@ const Register = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loadingPincode, setLoadingPincode] = useState(false);
+  const [pincodeManual, setPincodeManual] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -30,15 +31,19 @@ const Register = () => {
   useEffect(() => {
     if (formData.pincode.length === 6) {
       fetchPincodeData(formData.pincode);
+    } else if (!pincodeManual) {
+      setFormData(prev => ({ ...prev, district: '', state: '' }));
     }
   }, [formData.pincode]);
 
   const fetchPincodeData = async (pin: string) => {
     setLoadingPincode(true);
+    setPincodeManual(false);
     try {
       const response = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      if (!response.ok) throw new Error('API error');
       const data = await response.json();
-      if (data[0].Status === 'Success') {
+      if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
         const postOffice = data[0].PostOffice[0];
         setFormData(prev => ({
           ...prev,
@@ -46,11 +51,15 @@ const Register = () => {
           state: postOffice.State,
         }));
       } else {
-        toastError('Invalid pincode. Please enter a valid 6-digit pincode.');
+        // Invalid pincode — allow manual entry
+        setPincodeManual(true);
+        setFormData(prev => ({ ...prev, district: '', state: '' }));
+        toastError('Could not auto-detect location. Please enter district and state manually.');
       }
-    } catch (error) {
-      console.error('Error fetching pincode:', error);
-      toastError('Could not fetch location details for this pincode.');
+    } catch {
+      // Network/CORS failure — silently fall back to manual entry
+      setPincodeManual(true);
+      setFormData(prev => ({ ...prev, district: '', state: '' }));
     } finally {
       setLoadingPincode(false);
     }
@@ -72,8 +81,8 @@ const Register = () => {
     if (!formData.pincode) newErrors.pincode = 'Required';
     else if (formData.pincode.length !== 6) newErrors.pincode = 'Must be 6 digits';
 
-    if (!formData.district) newErrors.district = 'Could not determine city from pincode';
-    if (!formData.state) newErrors.state = 'Could not determine state from pincode';
+    if (!formData.district) newErrors.district = 'Enter your district / city';
+    if (!formData.state) newErrors.state = 'Enter your state';
     if (!formData.education) newErrors.education = 'Select qualification';
 
     setErrors(newErrors);
@@ -89,39 +98,23 @@ const Register = () => {
     }
 
     setIsSubmitting(true);
-
-    // Show a "server waking up" notice after 5 seconds if still pending
-    // (Render free tier cold starts can take 30–50s)
-    const wakingTimer = setTimeout(() => {
-      setServerWaking(true);
-    }, 5000);
+    const wakingTimer = setTimeout(() => setServerWaking(true), 5000);
 
     try {
-      console.log('Submitting registration data:', formData);
-
       const response = await api.register(formData);
-      console.log('Registration response:', response);
-
       clearTimeout(wakingTimer);
       setServerWaking(false);
 
       if (response?.success) {
         success('Registration successful! Redirecting to payment...');
-        setTimeout(() => {
-          navigate('/payment');
-        }, 1500);
+        setTimeout(() => navigate('/payment'), 1500);
       } else {
         throw new Error('Unexpected response from server. Please try again.');
       }
     } catch (error: any) {
       clearTimeout(wakingTimer);
       setServerWaking(false);
-      console.error('Registration error details:', error);
-
-      const message =
-        error?.message ||
-        'Registration failed. Please try again.';
-      toastError(message);
+      toastError(error?.message || 'Registration failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -161,7 +154,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Abstract visuals */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-[60px]" />
         </div>
 
@@ -172,7 +164,6 @@ const Register = () => {
             <p className="text-slate-400 text-sm font-medium">Please fill in your information below</p>
           </div>
 
-          {/* Server waking notice */}
           <AnimatePresence>
             {serverWaking && (
               <motion.div
@@ -244,6 +235,7 @@ const Register = () => {
               />
             </div>
 
+            {/* Pincode + Location */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <InputField
                 label="Pincode"
@@ -257,23 +249,59 @@ const Register = () => {
                 disabled={isSubmitting}
               />
               <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-4">
+                {/* District */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">District/City</label>
-                  <div className={`px-5 py-3 rounded-2xl border-2 ${errors.district ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
-                    {formData.district || 'Auto-filled from pincode'}
-                  </div>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    District/City{pincodeManual && <span className="text-indigo-400 normal-case font-medium"> (enter manually)</span>}
+                  </label>
+                  {pincodeManual ? (
+                    <input
+                      type="text"
+                      placeholder="e.g. Hyderabad"
+                      value={formData.district}
+                      onChange={e => setFormData({ ...formData, district: e.target.value })}
+                      disabled={isSubmitting}
+                      className={`w-full px-5 py-3 rounded-2xl border-2 transition-all font-bold text-sm placeholder:text-slate-300 h-[48px]
+                        ${errors.district ? 'border-rose-100 bg-rose-50/30' : 'border-indigo-200 bg-indigo-50/30 focus:border-indigo-500 focus:bg-white'}
+                        ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}
+                      `}
+                    />
+                  ) : (
+                    <div className={`px-5 py-3 rounded-2xl border-2 ${errors.district ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
+                      {formData.district || 'Auto-filled from pincode'}
+                    </div>
+                  )}
                   {errors.district && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">{errors.district}</p>}
                 </div>
+
+                {/* State */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">State</label>
-                  <div className={`px-5 py-3 rounded-2xl border-2 ${errors.state ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
-                    {formData.state || 'Auto-filled from pincode'}
-                  </div>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    State{pincodeManual && <span className="text-indigo-400 normal-case font-medium"> (enter manually)</span>}
+                  </label>
+                  {pincodeManual ? (
+                    <input
+                      type="text"
+                      placeholder="e.g. Telangana"
+                      value={formData.state}
+                      onChange={e => setFormData({ ...formData, state: e.target.value })}
+                      disabled={isSubmitting}
+                      className={`w-full px-5 py-3 rounded-2xl border-2 transition-all font-bold text-sm placeholder:text-slate-300 h-[48px]
+                        ${errors.state ? 'border-rose-100 bg-rose-50/30' : 'border-indigo-200 bg-indigo-50/30 focus:border-indigo-500 focus:bg-white'}
+                        ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}
+                      `}
+                    />
+                  ) : (
+                    <div className={`px-5 py-3 rounded-2xl border-2 ${errors.state ? 'border-rose-100 bg-rose-50/30' : 'border-slate-100 bg-slate-50'} text-slate-500 font-bold uppercase text-[11px] h-[48px] flex items-center`}>
+                      {formData.state || 'Auto-filled from pincode'}
+                    </div>
+                  )}
                   {errors.state && <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">{errors.state}</p>}
                 </div>
               </div>
             </div>
 
+            {/* Education */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Education Qualification</label>
               <div className="relative">
@@ -285,16 +313,11 @@ const Register = () => {
                     <GraduationCap className="text-slate-300" size={18} />
                     <span className={formData.education ? 'text-slate-900' : 'text-slate-400'}>
                       {formData.education
-                        ? formData.education === 'SSC'
-                          ? '10th Standard (SSC)'
-                          : formData.education === 'Intermediate'
-                          ? '12th Standard / Intermediate'
-                          : formData.education === 'Diploma'
-                          ? 'Diploma'
-                          : formData.education === 'BTech'
-                          ? 'Undergraduate (BTech)'
-                          : formData.education === 'MTech'
-                          ? 'Postgraduate (MTech)'
+                        ? formData.education === 'SSC' ? '10th Standard (SSC)'
+                          : formData.education === 'Intermediate' ? '12th Standard / Intermediate'
+                          : formData.education === 'Diploma' ? 'Diploma'
+                          : formData.education === 'BTech' ? 'Undergraduate (BTech)'
+                          : formData.education === 'MTech' ? 'Postgraduate (MTech)'
                           : 'Other'
                         : 'Select Qualification'}
                     </span>
@@ -320,10 +343,7 @@ const Register = () => {
                       ].map(opt => (
                         <div
                           key={opt.val}
-                          onClick={() => {
-                            setFormData({ ...formData, education: opt.val });
-                            setIsDropdownOpen(false);
-                          }}
+                          onClick={() => { setFormData({ ...formData, education: opt.val }); setIsDropdownOpen(false); }}
                           className="px-6 py-3 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer transition-colors font-bold text-sm text-slate-600"
                         >
                           {opt.label}
@@ -349,26 +369,20 @@ const Register = () => {
                   {serverWaking ? 'Waiting for server...' : 'Processing...'}
                 </>
               ) : (
-                <>
-                  Register & Continue
-                  <ArrowRight size={18} />
-                </>
+                <>Register & Continue <ArrowRight size={18} /></>
               )}
             </motion.button>
 
             <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
               By continuing, you agree to our{' '}
               <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a>{' '}
-              <br /> and{' '}
-              <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>
+              <br /> and <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>
             </p>
           </form>
 
           <p className="text-center text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-8 pt-8 border-t border-slate-100">
             Already have an account?{' '}
-            <button onClick={() => navigate('/login')} className="text-indigo-600 hover:underline">
-              Sign In
-            </button>
+            <button onClick={() => navigate('/login')} className="text-indigo-600 hover:underline">Sign In</button>
           </p>
         </div>
       </motion.div>
@@ -377,28 +391,13 @@ const Register = () => {
 };
 
 const InputField = ({
-  label,
-  icon,
-  placeholder,
-  value,
-  onChange,
-  error,
-  type = 'text',
-  hasToggle,
-  onToggle,
-  showState,
-  loading,
-  maxLength,
-  disabled,
+  label, icon, placeholder, value, onChange, error,
+  type = 'text', hasToggle, onToggle, showState, loading, maxLength, disabled,
 }: any) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
     <div className="relative group">
-      <div
-        className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
-          error ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-indigo-500'
-        }`}
-      >
+      <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-300 ${error ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-indigo-500'}`}>
         {icon}
       </div>
       <input
@@ -415,12 +414,8 @@ const InputField = ({
         onChange={e => onChange(e.target.value)}
       />
       {hasToggle && (
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={disabled}
-          className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50"
-        >
+        <button type="button" onClick={onToggle} disabled={disabled}
+          className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-500 transition-colors disabled:opacity-50">
           {showState ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       )}
@@ -432,11 +427,8 @@ const InputField = ({
     </div>
     <AnimatePresence>
       {error && (
-        <motion.p
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1"
-        >
+        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+          className="text-rose-500 text-[10px] font-black uppercase tracking-widest ml-1">
           {error}
         </motion.p>
       )}
