@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, MapPin, GraduationCap, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,11 +27,14 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [serverWaking, setServerWaking] = useState(false);
+  
+  // Add ref to track if pincode was auto-filled to prevent loops
+  const lastFetchedPincode = useRef<string>('');
 
-  // Debounced pincode fetch
+  // Memoize fetchPincodeData with proper dependencies
   const fetchPincodeData = useCallback(async (pin: string) => {
-    // Don't fetch if pin is invalid
-    if (!/^\d{6}$/.test(pin)) return;
+    // Don't fetch if pin is invalid or already fetched
+    if (!/^\d{6}$/.test(pin) || lastFetchedPincode.current === pin) return;
     
     setLoadingPincode(true);
     setPincodeManual(false);
@@ -56,6 +59,9 @@ const Register = () => {
           po.Name.includes('HO')
         ) || postOffices[0];
         
+        // Mark this pincode as fetched
+        lastFetchedPincode.current = pin;
+        
         setFormData(prev => ({
           ...prev,
           district: bestMatch.District || bestMatch.Name.split(' ')[0],
@@ -79,20 +85,25 @@ const Register = () => {
     } finally {
       setLoadingPincode(false);
     }
-  }, [success, toastError]);
+  }, [success, toastError]); // Remove unnecessary dependencies
 
   // Debounce effect for pincode
   useEffect(() => {
-    if (formData.pincode.length === 6) {
-      const timer = setTimeout(() => {
-        fetchPincodeData(formData.pincode);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    } else if (!pincodeManual && formData.pincode.length > 0 && formData.pincode.length < 6) {
-      setFormData(prev => ({ ...prev, district: '', state: '' }));
-    }
-  }, [formData.pincode, fetchPincodeData, pincodeManual]);
+    const timer = setTimeout(() => {
+      if (formData.pincode.length === 6) {
+        // Only fetch if pincode changed and not manually entered
+        if (!pincodeManual) {
+          fetchPincodeData(formData.pincode);
+        }
+      } else if (formData.pincode.length > 0 && formData.pincode.length < 6) {
+        // Reset location when pincode is incomplete
+        setFormData(prev => ({ ...prev, district: '', state: '' }));
+        lastFetchedPincode.current = ''; // Reset the fetched pincode
+      }
+    }, 500); // 500ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [formData.pincode, fetchPincodeData, pincodeManual]); // Removed unnecessary dependencies
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -149,6 +160,18 @@ const Register = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePincodeChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    
+    // Reset the fetched pincode when user starts typing a new pincode
+    if (numericValue !== formData.pincode) {
+      lastFetchedPincode.current = '';
+      setPincodeManual(false);
+    }
+    
+    setFormData(prev => ({ ...prev, pincode: numericValue }));
   };
 
   return (
@@ -274,7 +297,7 @@ const Register = () => {
                 icon={<MapPin size={16} />}
                 placeholder="123456"
                 value={formData.pincode}
-                onChange={(v: string) => setFormData({ ...formData, pincode: v.replace(/\D/g, '') })}
+                onChange={handlePincodeChange}
                 error={errors.pincode}
                 loading={loadingPincode}
                 maxLength={6}
