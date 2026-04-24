@@ -1,7 +1,3 @@
-/**
- * API Service for EduExam
- */
-
 const API_BASE_URL = 'https://eduexam-online-examination-system.onrender.com/api';
 
 // Helper function to handle responses
@@ -41,7 +37,7 @@ export const api = {
       console.log('Sending registration data:', userData);
 
       // Map frontend fields to backend expected fields
-  const requestBody = {
+      const requestBody = {
         username: userData.username,
         email: userData.email,
         password: userData.password,
@@ -50,7 +46,6 @@ export const api = {
         state: userData.state,
         education: userData.education
       };
-
 
       console.log('Request body:', requestBody);
 
@@ -69,7 +64,7 @@ export const api = {
         // Store user data
         localStorage.setItem('tempUser', JSON.stringify(data.data));
         localStorage.setItem('userId', data.data.userId.toString());
-        localStorage.setItem('currentUser', JSON.stringify(data.data)); // Also set as current user
+        localStorage.setItem('currentUser', JSON.stringify(data.data));
       }
 
       return { success: true, data: data.data };
@@ -106,8 +101,6 @@ export const api = {
         // Store user data
         localStorage.setItem('currentUser', JSON.stringify(data.data));
         localStorage.setItem('userId', data.data.userId.toString());
-
-        // Also store username separately for easy access
         localStorage.setItem('username', data.data.username);
       }
 
@@ -148,7 +141,7 @@ export const api = {
       cardNumber: paymentData.cardNumber || '1234567890123456',
       cvv: paymentData.cvv || '123',
       upiId: paymentData.upiId || 'onlineexam@upi',
-      amount: paymentData.amount || 499
+      amount: 499
     };
 
     console.log('Payment request:', { userId, ...requestBody });
@@ -195,14 +188,14 @@ export const api = {
 
     return data.data;
   },
+
   // --- Answers ---
   saveAnswer: async (questionId: number, selectedOption: string) => {
     const userId = api.getUserId();
     if (!userId) throw new Error('User not logged in');
 
-    // Make sure we're sending the correct field names
     const requestBody = {
-      questionId: questionId,  // Make sure this matches backend DTO
+      questionId: questionId,
       selectedOption: selectedOption
     };
 
@@ -219,12 +212,12 @@ export const api = {
     const data = await handleResponse(response);
     return data.data;
   },
+
   getAnswers: async () => {
     const userId = api.getUserId();
     if (!userId) throw new Error('User not logged in');
 
     const response = await fetch(`${API_BASE_URL}/exam/answers?userId=${userId}`);
-
     const data = await handleResponse(response);
     return data.data;
   },
@@ -255,13 +248,11 @@ export const api = {
     const cached = localStorage.getItem('lastExamResult');
     if (cached) {
       const parsed = JSON.parse(cached);
-      // Only use cache if it's from the current user (you might want to check timestamps)
       return parsed;
     }
 
     // Otherwise fetch from API
     const response = await fetch(`${API_BASE_URL}/exam/result?userId=${userId}`);
-
     const data = await handleResponse(response);
 
     if (data.success) {
@@ -277,7 +268,6 @@ export const api = {
     if (!userId) throw new Error('User not logged in');
 
     const response = await fetch(`${API_BASE_URL}/payments/status?userId=${userId}`);
-
     const data = await handleResponse(response);
     return data.data;
   },
