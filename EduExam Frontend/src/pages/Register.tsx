@@ -25,6 +25,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [serverWaking, setServerWaking] = useState(false);
 
   useEffect(() => {
     if (formData.pincode.length === 6) {
@@ -88,27 +89,36 @@ const Register = () => {
     }
 
     setIsSubmitting(true);
+
+    // Show a "server waking up" notice after 5 seconds if still pending
+    // (Render free tier cold starts can take 30–50s)
+    const wakingTimer = setTimeout(() => {
+      setServerWaking(true);
+    }, 5000);
+
     try {
       console.log('Submitting registration data:', formData);
 
       const response = await api.register(formData);
       console.log('Registration response:', response);
 
-      // ✅ Fixed: Navigate as long as API call doesn't throw,
-      // regardless of whether response contains a `success` field.
-      if (response) {
+      clearTimeout(wakingTimer);
+      setServerWaking(false);
+
+      if (response?.success) {
         success('Registration successful! Redirecting to payment...');
         setTimeout(() => {
           navigate('/payment');
         }, 1500);
       } else {
-        throw new Error('Empty response from server');
+        throw new Error('Unexpected response from server. Please try again.');
       }
     } catch (error: any) {
+      clearTimeout(wakingTimer);
+      setServerWaking(false);
       console.error('Registration error details:', error);
-      // ✅ Fixed: Properly extract error message from server or axios response
+
       const message =
-        error?.response?.data?.message ||
         error?.message ||
         'Registration failed. Please try again.';
       toastError(message);
@@ -161,6 +171,26 @@ const Register = () => {
             <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Create Account</h3>
             <p className="text-slate-400 text-sm font-medium">Please fill in your information below</p>
           </div>
+
+          {/* Server waking notice */}
+          <AnimatePresence>
+            {serverWaking && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4"
+              >
+                <Loader2 className="animate-spin text-amber-500 mt-0.5 shrink-0" size={16} />
+                <div>
+                  <p className="text-amber-800 font-black text-xs uppercase tracking-widest">Server Starting Up</p>
+                  <p className="text-amber-600 text-xs font-medium mt-0.5">
+                    The server is waking from sleep. This may take up to 30 seconds — please wait.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -316,7 +346,7 @@ const Register = () => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="animate-spin" size={18} />
-                  Processing...
+                  {serverWaking ? 'Waiting for server...' : 'Processing...'}
                 </>
               ) : (
                 <>
@@ -328,13 +358,9 @@ const Register = () => {
 
             <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
               By continuing, you agree to our{' '}
-              <a href="#" className="text-indigo-600 hover:underline">
-                Terms of Service
-              </a>{' '}
+              <a href="#" className="text-indigo-600 hover:underline">Terms of Service</a>{' '}
               <br /> and{' '}
-              <a href="#" className="text-indigo-600 hover:underline">
-                Privacy Policy
-              </a>
+              <a href="#" className="text-indigo-600 hover:underline">Privacy Policy</a>
             </p>
           </form>
 
