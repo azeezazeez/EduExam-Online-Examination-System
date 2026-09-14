@@ -6,14 +6,6 @@
 
 **Edu Online Examination System** is a web-based platform built using **Spring Boot** that enables efficient creation, management, and evaluation of online exams.
 
-<br>
-
-🌐 **Live Demo:** https://eduexam-edu.vercel.app
-
-⏳ *Note: initial load may take 5 - 10 seconds to load*
-
-💻 **GitHub:** https://github.com/azeezazeez/EduExam-Online-Examination-System
-
 </div>
 
 ---
