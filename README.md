@@ -1,6 +1,6 @@
-# 🎓 EDU ONLINE EXAMINATION SYSTEM
-
 <div align="center">
+
+# 🎓 EDU ONLINE EXAMINATION SYSTEM
 
 ### 📝 Online Exams • ⚡ Instant Results • 🔐 Secure & Scalable
 
